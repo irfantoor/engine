@@ -1,0 +1,15 @@
+{
+    "name": "irfantoor/engine",
+    "description": "A simple PHP Engine",
+    "type": "project",
+    "require": {
+        "pimple/pimple": "^3.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Irfan TOOR",
+            "email": "email@irfantoor.com"
+        }
+    ]
+}
