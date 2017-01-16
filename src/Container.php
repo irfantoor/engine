@@ -1,6 +1,6 @@
 <?php
 
-namespace IrfanTOOR;
+namespace IrfanTOOR\Engine;
 
 use Pimple\Container as PimpleContainer;
 

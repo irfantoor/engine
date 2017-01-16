@@ -3,91 +3,98 @@
 use IrfanTOOR\Engine\Console;
  
 class ConsoleTest extends PHPUnit_Framework_TestCase 
-{ 
+{
+	public function testConsoleClassExists()
+	{
+		$c = new Console;
+	    $this->assertInstanceOf('IrfanTOOR\Engine\Console', $c);
+	}
+
 	public function testConsoleOut()
 	{
-	    $console = new Console;
+	    $c = new Console;
 	    ob_start();
-	    $console->out('Hello World!');
-	    $txt = ob_get_clean();
-	    $this->assertEquals('Hello World!', $txt);
+	    $c->out('Hello World!');
+	    $actual = ob_get_clean();
+	    $this->assertEquals('Hello World!', $actual);
 	}
 
 	
 	public function testConsoleColoredOut()
 	{
-	    $console = new Console;
+	    $c = new Console;
 	    ob_start();
-	    	$console->out('Hello World!', 'red');
-	    $txt = ob_get_clean();
+	    	$c->out('Hello World!', 'red');
+	    $actual = ob_get_clean();
 
 	    ob_start();
-            $console->escape('red');
+            $c->escape('red');
             echo 'Hello World!';
-            $console->escape('');
-        $txt2 = ob_get_clean();
+            $c->escape('');
+        $expected = ob_get_clean();
           
-	    $this->assertEquals($txt2, $txt);
+	    $this->assertEquals($expected, $actual);
 	}
 
 	public function testShowsHelpOnNoCommandOption()
 	{
-	    $console = new Console('ABCD', 'X.Y.Z');
+	    $c = new Console;
 	    ob_start();
-	    	$console->run();
-	    $txt = ob_get_clean();
+	    	$c->run();
+	    $actual = ob_get_clean();
 
 	    ob_start();
-	    	$console->help();
-	    $txt2 = ob_get_clean();
+	    	$c->help();
+	    $expected = ob_get_clean();
 
-	    $this->assertEquals($txt2, $txt);
+	    $this->assertEquals($expected, $actual);
 	}
 
 	public function testShowsHelpIfHelpIsRequested()
 	{
-	    $console = new Console('ABCD', 'X.Y.Z');
-
+	    $c = new Console;
 	    $_SERVER['argv'][1] = '-h';
 
 	    ob_start();
-	    	$console->run();
-	    $txt = ob_get_clean();
+	    	$c->run();
+	    $actual = ob_get_clean();
 
 	    ob_start();
-	    	$console->help();
-	    $txt2 = ob_get_clean();
+	    	$c->help();
+	    $expected = ob_get_clean();
 
-	    $console = new Console('ABCD', 'X.Y.Z');
+	    $this->assertEquals($expected, $actual);
+
+	    $c = new Console;
 	    $_SERVER['argv'][1] = '--help';
 	    ob_start();
-	    	$console->run();
-	    $txt3 = ob_get_clean();
-
-	    $this->assertEquals($txt2, $txt);
-	    $this->assertEquals($txt3, $txt);
+	    	$c->run();
+	    $actual = ob_get_clean();
+	    
+	    $this->assertEquals($expected, $actual);
 	}
 
 	public function testVersionCommand()
 	{
-	    $console = new Console();
+	    $c = new Console('ABC','X.Y.Z');
 	    $_SERVER['argv'][1] = '-V';
 
 	    ob_start();
-	    	$console->run();
-	    $txt = ob_get_clean();
+	    	$c->run();
+	    $actual = ob_get_clean();
 
 	    ob_start();
-	    	$console->version();
-	    $txt2 = ob_get_clean();
+	    	$c->version();
+	    $expected = ob_get_clean();
 
-	    $console = new Console();
+	    $this->assertEquals($expected, $actual);
+
+	    $c = new Console('ABC','X.Y.Z');
 	    $_SERVER['argv'][1] = '--version';
 	    ob_start();
-	    	$console->run();
-	    $txt3 = ob_get_clean();
-
-	    $this->assertEquals($txt2, $txt);
-	    $this->assertEquals($txt3, $txt);
+	    	$c->run();
+	    $actual = ob_get_clean();
+	    
+	    $this->assertEquals($expected, $actual);
 	}
 }
