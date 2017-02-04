@@ -2,53 +2,70 @@
 
 namespace IrfanTOOR\Engine;
 
-use Pimple\Container as PimpleContainer;
+use Interop\Container\ContainerInterface;
+use IrfanTOOR\Engine\Exception\ContainerException;
+use IrfanTOOR\Engine\Exception\IdNotStringException;
+use IrfanTOOR\Engine\Exception\NotFoundException;
 
-class Container extends PimpleContainer
+class Container implements ContainerInterface
 {
-	function __construct($init=[]) {
-		parent::__construct($init);	
-	}
+	protected $raw;
 
-	# you can set a key using this notation: $c->hello = 'world'
-	function __set($key, $value) {
-		$this->set($key, $value);
-	}
-	
-	# you can get a key using this notation: $h = $c->hello
-	# @return Mixed - the value of the key is returned
-	function __get($key) {
-		$this->get($key);
-	}
-	
-	# checks if a key exists $c->has('hello')
-	# @return Boolean
-	public function has($key) {
-		return $this->offsetExists($key);
-	}
-	
-	# you can get the value of key, or the default value if does not exist
-	public function get($key, $default = null)
-	{
-		if ($this->has($key))
-			return $this->offsetGet($key);
-		
-		return $default;
-	}
-	
-	# you can set the value of key to value or an array of assignments
-	public function set($key, $value=null) {	
-		if (is_array($key)) {
-			foreach($key as $k => $v) {
-				$this->set($k, $v);
-			}
-		} else {
-			$this->offsetSet($key, $value);
+	/**
+	 * Constructs a container and initializes with the initial data
+	 * 
+	 * @param array $init contains a key, value array, so that the container be initialized
+	 */
+	function __construct($init=[]) {
+		$this->raw = [];
+
+		# Initialize Container
+		foreach ($init as $key => $value) {
+			$this->raw[$key] = $value;
 		}
 	}
-	
-	# clear a key
-	public function clear($key) {
-		$this->offsetUnset($key);
-	}
+
+    /**
+     * Finds an entry of the container by its identifier and returns it.
+     *
+     * @param string $id Identifier of the entry to look for.
+     *
+     * @throws IdNotStringException  Identity id, was not a string.
+     * @throws NotFoundException  No entry was found for this identifier: id.
+     * @throws ContainerException Error while retrieving the entry referred by identifier: id.
+     *
+     * @return mixed Entry.
+     */
+    public function get($id) {
+    	if (!is_string($id))
+    		throw new IdNotStringException("Identity {$id}, was not a string");
+
+    	if (!$this->has($id))
+    		throw new NotFoundException("No entry was found for this identifier: {$id}");
+
+    	try {
+    		$result = $this->raw[$id];
+    		return $result;
+    	} catch(\Exception $e) {
+			throw new ContainerException("Error while retrieving the entry referred by identifier: {$id}");
+    	}
+    }
+
+    /**
+     * Returns true if the container can return an entry for the given identifier.
+     * Returns false otherwise.
+     *
+     * @param string $id Identifier of the entry to look for.
+     *
+     * @return boolean
+     */
+    public function has($id) {
+    	if (!is_string($id))
+    		return false;
+
+    	if (array_key_exists($id, $this->raw))
+    		return true;
+
+    	return false;
+    }
 }

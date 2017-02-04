@@ -4,81 +4,46 @@ use IrfanTOOR\Engine\Container;
  
 class ContainerTest extends PHPUnit_Framework_TestCase 
 {
+	private $container;
+
+	public function setup() {
+		$this->container = new Container([
+			'hello' => 'world!',
+			'null' => null,
+			'array' => ['an' , 'array'],
+		]);
+	}
+
 	public function testContainerClassExists()
 	{
-		$c = new Container;
-	    $this->assertInstanceOf('IrfanTOOR\Engine\Container', $c);
+	    $this->assertInstanceOf('IrfanTOOR\Engine\Container', $this->container);
 	}
 
-	/**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Identifier "key" is not defined
-     */
-	public function testGetTheDefaultValue() {
-		$c = new Container;
-
-		$this->assertEquals('not-defined', $c->get('key', 'not-defined'));
-		$this->assertEquals(null, $c->get('key'));
-
-		# creates expected exception
-		$this->assertEquals('value', $c['key']);		
+	public function testHas()
+	{
+		$this->assertTrue($this->container->has('hello'));
+		$this->assertTrue($this->container->has('null'));
+		$this->assertTrue($this->container->has('array'));
+		$this->assertFalse($this->container->has('world!'));
+		$this->assertFalse($this->container->has(null));
 	}
 
-	public function testGetTheDefinedValue() {
-		$c = new Container;
-		$c['key'] = 'value';
-
-		$this->assertEquals('value', $c->get('key', 'not-defined'));
-		$this->assertEquals('value', $c->get('key'));
-		$this->assertEquals('value', $c['key']);
+	public function testGet()
+	{
+		$this->assertEquals('world!', $this->container->get('hello'));
+		$this->assertNull($this->container->get('null'));
+		$this->assertEquals(['an','array'], $this->container->get('array'));
 	}
 
-	public function testSetAValue() {
-		$c = new Container;
-		$c->set('key', 'value');
+	public function testIdNotStringException()
+	{
 
-		$this->assertEquals('value', $c->get('key', 'not-defined'));
-		$this->assertEquals('value', $c->get('key'));
-		$this->assertEquals('value', $c['key']);
-	}
+		$this->expectException(IrfanTOOR\Engine\Exception\IdNotStringException::class);
+		$this->expectExceptionMessage('Identity , was not a string');
+		$world = $this->container->get(null);
 
-	public function testSetMultipleValues() {
-		$c = new Container;
-		$c->set([
-			'key'=>'value', 
-			'key2'=>'value2'
-		]);
-
-		$this->assertEquals('value', $c->get('key', 'not-defined'));
-		$this->assertEquals('value', $c->get('key'));
-		$this->assertEquals('value', $c['key']);
-
-		$this->assertEquals('value2', $c->get('key2', 'not-defined'));
-		$this->assertEquals('value2', $c->get('key2'));
-		$this->assertEquals('value2', $c['key2']);
-	}
-
-	public function testHasValue() {
-		$c = new Container;
-		$c->set('key', 'value');
-
-		$this->assertEquals(true, $c->has('key'));
-		$this->assertEquals(false, $c->get('key2'));
-	}
-
-	/**
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessage Identifier "key" is not defined
-     */
-	public function testClearValue() {
-		$c = new Container;
-		$c->set('key', 'value');
-		$c->clear('key');
-
-		$this->assertEquals(false, $c->has('key'));
-		$this->assertEquals(null, $c->get('key'));
-		$this->assertEquals('not-defined', $c->get('key', 'not-defined'));
-		# Raises exception
-		$this->assertEquals('not-defined', $c['key']);		
+		$this->expectException(IrfanTOOR\Engine\Exception\NotFoundException::class);
+		$this->expectExceptionMessage('No entry was found for this identifier: has');
+		$world = $this->container->get('has');
 	}
 }
