@@ -20,9 +20,7 @@ class Container implements ContainerInterface
 		$this->raw = [];
 
 		# Initialize Container
-		foreach ($init as $key => $value) {
-			$this->raw[$key] = $value;
-		}
+		$this->set($init);
 	}
 
     /**
@@ -67,5 +65,42 @@ class Container implements ContainerInterface
     		return true;
 
     	return false;
+    }
+
+    /**
+     * Sets a entry for a given identifier: id
+     *
+     * @param string $id Identifier of the entry or an array of key, value pairs
+     * @param string $id Identifier of the entry.
+     *
+     * @throws IdNotStringException  Identity id, was not a string.
+     */
+    public function set($id=null, $entry=null) {
+        if (is_array($id)) {
+            foreach ($id as $k => $v) {
+                $this->set($k, $v);
+            }
+        }
+        else {
+            if (!is_string($id))
+                throw new IdNotStringException("Identity {$id}, was not a string");
+
+            $this->raw[$id] = $entry;
+        }
+    }
+
+    /**
+     * Removes an entry for the given identifier.
+     *
+     * @param string $id Identifier of the entry to look for.
+     */
+    public function remove($id) {
+        if (!is_string($id))
+            throw new IdNotStringException("Identity {$id}, was not a string");
+
+        if ($this->has($id)) {
+            $this->set($id, null);
+            unset($this->raw[$id]);
+        }
     }
 }
