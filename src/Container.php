@@ -17,6 +17,7 @@ class Container implements ContainerInterface
 	 * @param array $init contains a key, value array, so that the container be initialized
 	 */
 	function __construct($init=[]) {
+        $this->factories = [];
 		$this->raw = [];
 
 		# Initialize Container
@@ -27,6 +28,7 @@ class Container implements ContainerInterface
      * Finds an entry of the container by its identifier and returns it.
      *
      * @param string $id Identifier of the entry to look for.
+     * @param mixed $args used as arguments to be passed to a closure/factory function
      *
      * @throws IdNotStringException  Identity id, was not a string.
      * @throws NotFoundException  No entry was found for this identifier: id.
@@ -34,7 +36,7 @@ class Container implements ContainerInterface
      *
      * @return mixed Entry.
      */
-    public function get($id) {
+    public function get($id, $args=null) {
     	if (!is_string($id))
     		throw new IdNotStringException("Identity {$id}, was not a string");
 
@@ -42,8 +44,10 @@ class Container implements ContainerInterface
     		throw new NotFoundException("No entry was found for this identifier: {$id}");
 
     	try {
-    		$result = $this->raw[$id];
-    		return $result;
+            if (array_key_exists($id, $this->factories))
+                return $this->raw[$id]($args);
+            else
+                return $this->raw[$id];
     	} catch(\Exception $e) {
 			throw new ContainerException("Error while retrieving the entry referred by identifier: {$id}");
     	}
@@ -85,6 +89,10 @@ class Container implements ContainerInterface
             if (!is_string($id))
                 throw new IdNotStringException("Identity {$id}, was not a string");
 
+            if (!is_string($entry) && is_callable($entry)) {
+                $this->factories[$id] = true;
+            }
+
             $this->raw[$id] = $entry;
         }
     }
@@ -100,6 +108,7 @@ class Container implements ContainerInterface
 
         if ($this->has($id)) {
             $this->set($id, null);
+            unset($this->factories[$id]);
             unset($this->raw[$id]);
         }
     }
