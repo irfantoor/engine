@@ -76,23 +76,21 @@ class ContainerTest extends PHPUnit_Framework_TestCase
 		$this->assertTrue($this->container->has('not-defined'));
 		$this->assertEquals('now-defined', $this->container->get('not-defined'));
 
-		#return $this->container;
+		return $this->container;
 	}
 
 	/**
-     * @ depends testContainerSetAnEntry
+     * @depends testContainerSetAnEntry
      */
-	public function testContainerRemoveAnEntry()
+	public function testContainerRemoveAnEntry($container)
 	{
-		# define an entry not previously defined
-		$this->assertFalse($this->container->has('not-defined'));
-		$this->container->set('not-defined', 'now-defined');
-		$this->assertEquals('now-defined', $this->container->get('not-defined'));
-
+		$this->container = $container;
+		
+		$this->assertTrue($this->container->has('not-defined'));
 		$this->container->remove('not-defined');
 		# NotFoundException
 		$this->expectException(IrfanTOOR\Engine\Exception\NotFoundException::class);
 		$this->expectExceptionMessage('No entry was found for this identifier: not-defined');
 		$exception = $this->container->get('not-defined');
-	}	
+	}
 }
