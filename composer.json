@@ -1,7 +1,7 @@
 {
     "name": "irfantoor/engine",
     "description": "A bare-minimum PHP framework, focussing on the requests and the responses. A swiss-knife for world-wide-web",
-    "keywords": ["irfan's engine", "php", "framework"],
+    "keywords": ["irfans-engine", "mini", "php", "framework"],
     "type": "project",
     "license": "MIT",
     "authors": [
