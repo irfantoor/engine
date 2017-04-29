@@ -30,7 +30,7 @@ class IE {
 
 	public
 		$name       = "Irfan's Engine",
-		$version    = "1.0",
+		$version    = "0.43",
 
 		$config,
 		
@@ -40,6 +40,10 @@ class IE {
 				
 		$routes    = [],
 		$data      = [];
+
+    protected static 
+    	$sent      = false,
+    	$instance  = null;
 		
     public static $phrases = [
         100 => 'Continue',
@@ -102,8 +106,6 @@ class IE {
         511 => 'Network Authentication Required',
     ];
     
-    protected static $instance;
-
 	function __construct($config=[])
 	{
 		# register the shutdown function
@@ -111,15 +113,14 @@ class IE {
 		
 		# regsiter the autoloader
 		spl_autoload_register([$this, "load"]);
-	
 		
 		set_exception_handler(
 			function($obj) {
-				ob_start();
-				$this->dump($obj);
-				$this->response["body"] = ob_get_clean();
-				
 				$this->response["status"] = 500;
+				$this->response["body"] = '<div style="border-left:4px solid #d00; padding:6px;">' .
+				 	'<div style="color:#d00">Exception: ' . $obj->getMessage() . '</div><code>' .
+				 	$obj->getFile() . ' - ' . $obj->getLine() .
+					'</code></div>';
 			}
 		);
 		
@@ -206,6 +207,8 @@ class IE {
 	
 	static function getInstance()
 	{
+		if (! self::$instance)
+			return new IE();
 		return self::$instance;
 	}
 	
@@ -231,12 +234,11 @@ class IE {
 	 * @param optional $dbt - debug back trace
 	 * @param optional $full - true if full call trace is requested or just the recent
 	 */
-	static function trace($dbt=null, $full=true) {
-		$dbt = !$dbt ? debug_backtrace() : $dbt;
+	static function trace($full=false) {
 		$trace = '';
 		$color = '#d00';
 		
-		foreach($dbt as $er) {
+		foreach(debug_backtrace() as $er) {
 			$file = isset($er['file'])? $er['file']: '';
 			$line = isset($er['line'])? $er['line']: '';
 			$class = isset($er['class'])? $er['class']: '';
@@ -262,6 +264,7 @@ class IE {
 				else {
 					if (in_array($func, ['d','dd','dump']))
 						$trace = $t;
+					break;
 				}
 			}
 		}
@@ -276,7 +279,7 @@ class IE {
 	static function dump($v) {
 		$s = print_r($v, 1);
 		$s = preg_replace('/\[(.*)\]/U', '[<span style="color:#d00">$1</span>]', $s);
-		$trace = self::trace(null, false);
+		$trace = self::trace();
 		$tag = (is_array($v) || is_object($v)) ? 'pre' : 'code';
 		echo '<' . $tag . ' style="padding:0 10px; color:#36c; font-size:13px">' . $s . $trace . '</' . $tag . '>';
 	}
@@ -297,7 +300,7 @@ class IE {
 		
 		$found = false;		
 		foreach($this->routes as $route) {
-			$handles_route = 	strpos($route["methods"], $method) !== false || 
+			$handles_route = strpos($route["methods"], $method) !== false || 
 						strpos($route["methods"], "ANY") !== false;
 			$regex = $route["regex"];
 			preg_match('|(' . $regex . ')|', $path, $m);
@@ -357,31 +360,39 @@ class IE {
 	function send($response=null) {
 		ob_get_clean();
 		
+		if (self::$sent)
+			return;
+		
+		$ie = ie::getInstance();
+		
 		if ($response)
-			$this->response = $response;
-					
-		$body = $this->response["body"];
+			$ie->response = $response;
+		else
+			$response = $ie->response;
+			
+		$body = $response["body"];
 
 		if (!$body) {
-			$this->response["status"] = 500;
+			$response["status"] = 500;
 			$body = ["500" => "Server Error"];
 		}	
 				
 		### Debug Info according to debug level configured
-		if ($dl = $this->config->get('debug'))
+		if ($dl = $ie->config->get('debug'))
 		{
 			ob_start(); 
 			
 			### If there has been an error
-			if ($err=error_get_last()) {
-				$response["body"] = '<div style="border-left:4px solid #d00; padding:6px;">' .
+			if ($err = error_get_last()) {
+				$res["status"] = 500;
+				$body = $ob . '<div style="border-left:4px solid #d00; padding:6px;">' .
 					'<div style="color:#d00">Error: ' . $err['type'] . ' - ' . $err['message'] . '</div><code>' .
 					$err['file'] . ' - ' . $err['line'] .
 					'</code></div>';
 			}
 			
-			echo '<hr><div style="border-left:4px solid #ddd; padding:6px;">';
-			echo '<div style="color:#d00; padding: 10px; ">' . $this->name . ' v'. $this->version . ' -- debug level: ' . $dl . '</div>';
+			echo '<div style="border-left:4px double #36c; padding:6px;">';
+			echo '<div style="color:#d00; padding: 10px; ">' . $ie->name . ' v'. $ie->version . ' -- debug level: ' . $dl . '</div>';
 			
 			$t = microtime(true) - START;
 			$da["Time elapsed"] = sprintf(' %.2f mili sec.', $t * 1000);
@@ -395,12 +406,12 @@ class IE {
 			}
 			
 			if ($dl > 2) {
-				$this->request["body"] =  "...";
-				$this->response["body"] =  "...";
-				$da["IE"] = $this;
+				$ie->request["body"] =  "...";
+				$ie->response["body"] =  "...";
+				$da["IE"] = $ie;
 			}
 			
-			$this->dump($da);
+			ie::dump($da);
 			
 			echo '</div>';
 			
@@ -410,19 +421,19 @@ class IE {
     	if (!is_string($body)) {
     		$body = json_encode($body);
     		if (!$debug)
-    			$this->response["headers"]->set("Content-Type", "text/json");
-    	}		
+    			$response["headers"]->set("Content-Type", "text/json");
+    	}
     	    	
 		if ($debug)
 			$body .= $debug;
 		
 		
 		#### Process and send Headers
-    	$this->response["headers"]->set("Content-Length", strlen($body));
+    	$response["headers"]->set("Content-Length", strlen($body));
     	
-    	header('HTTP/' . $this->response["version"] . ' ' . $this->response["status"] . ' ' . self:: $phrases[$this->response["status"]]);
+    	header('HTTP/' . $response["version"] . ' ' . $response["status"] . ' ' . self:: $phrases[$response["status"]]);
     	
-		foreach($this->response["headers"]->raw() as $header=>$value) {
+		foreach($response["headers"]->raw() as $header=>$value) {
 			$value = is_array($value) ? $value : [$value];
 			$header_string = $header . ": " . implode("' ", $value);
 			header($header_string);
