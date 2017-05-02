@@ -1,5 +1,5 @@
-Irfan's Engine v0.42
-====================
+Irfan's Engine
+==============
 
 A bare-minimum PHP framework, with the spirit with which the HTTP was invented.
 focussing on the requests and the responses. A swiss-knife for world-wide-web.
