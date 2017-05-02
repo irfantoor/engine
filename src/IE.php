@@ -13,6 +13,10 @@ namespace IrfanTOOR\Engine;
 	The objective of this library is to be a Bare-minimum, Embeddable and Educative
 */
 
+use IrfanTOOR\Container;
+use IrfanTOOR\ContainerCI;
+use IrfanTOOR\Container\Adapter\Simple;
+use IrfanTOOR\Container\Adapter\Config;
 
 # to keep track of time
 if (!defined('START'))
@@ -30,7 +34,7 @@ class IE {
 
 	public
 		$name       = "Irfan's Engine",
-		$version    = "0.43",
+		$version    = "0.5",
 
 		$config,
 		
@@ -111,9 +115,6 @@ class IE {
 		# register the shutdown function
 		register_shutdown_function([$this, "send"]);
 		
-		# regsiter the autoloader
-		spl_autoload_register([$this, "load"]);
-		
 		set_exception_handler(
 			function($obj) {
 				$this->response["status"] = 500;
@@ -125,7 +126,7 @@ class IE {
 		);
 		
 		# Config Container
-		$this->config = new Container($config);
+		$this->config = new Container(new Simple($config));
 		
 		# default timezone
 		date_default_timezone_set($this->config->get("timezone", "Europe/Paris"));
@@ -153,8 +154,7 @@ class IE {
 		}
 		
 		$env['headers'] = $headers;
-
-		$this->env = new Container($env);		
+		$this->env = new Container(new Simple($env));
 		
 		$uri = array_merge(
 			[
@@ -180,7 +180,7 @@ class IE {
 		$this->request = [
 			'method'	=> $env['REQUEST_METHOD'],
 			'uri'       => $uri, #new Container($uri),
-			'headers'   => new ContainerCI($env['headers']),
+			'headers'   => new ContainerCI(new Simple($env['headers'])),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'get'       => $_GET,
@@ -192,7 +192,7 @@ class IE {
 		# Response
 		$this->response = [
 			'status'    => 200,
-			'headers'   => new ContainerCI([]),
+			'headers'   => new ContainerCI(new Simple([])),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'cookie'    => $_COOKIE,
@@ -211,13 +211,14 @@ class IE {
 			return new IE();
 		return self::$instance;
 	}
-	
+		
 	/**
 	 * Loads IrfanTOOR\Engine classes or App\ ... classes etc
 	 * Note this method is not called directly but is called when ever a required class has not been loaded
 	 *
 	 * @param String	$class	class to be loaded
 	 */
+	 /*
 	function load($class) 
 	{
 		$aclass = explode("\\",$class);
@@ -227,6 +228,7 @@ class IE {
 		#echo $path . str_replace("_", "/", $c) . ".php";
 		@require  $path . str_replace("_", "/", $c) . ".php";
 	}
+	*/
 			
 	/**
 	 * Returns the calling trace
@@ -378,7 +380,7 @@ class IE {
 		}	
 				
 		### Debug Info according to debug level configured
-		if ($dl = $ie->config->get('debug'))
+		if ($dl = $ie->config->get('debug', 0))
 		{
 			ob_start(); 
 			
@@ -411,7 +413,7 @@ class IE {
 				$da["IE"] = $ie;
 			}
 			
-			ie::dump($da);
+			self::dump($da);
 			
 			echo '</div>';
 			
@@ -433,7 +435,7 @@ class IE {
     	
     	header('HTTP/' . $response["version"] . ' ' . $response["status"] . ' ' . self:: $phrases[$response["status"]]);
     	
-		foreach($response["headers"]->raw() as $header=>$value) {
+		foreach($response["headers"]->toArray() as $header=>$value) {
 			$value = is_array($value) ? $value : [$value];
 			$header_string = $header . ": " . implode("' ", $value);
 			header($header_string);
