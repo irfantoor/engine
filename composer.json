@@ -12,7 +12,7 @@
     ],
     "require": {
         "php": ">=5.6.0",
-        "irfantoor/container": "dev-master"
+        "irfantoor/container": "^0.51"
     },
     "require-dev": {
         "phpunit/phpunit": "5.*"
