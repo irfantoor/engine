@@ -114,6 +114,7 @@ class IE {
 	{
 		# register the shutdown function
 		register_shutdown_function([$this, "send"]);
+		spl_autoload_register([$this, "load"]);
 		
 		set_exception_handler(
 			function($obj) {
@@ -163,7 +164,7 @@ class IE {
 				'password'  => '',
 				'host'      => isset($env['HTTP_HOST']) ? $env['HTTP_HOST'] : $env['SERVER_NAME'],
 				'port'      => $env['SERVER_PORT'],
-				# 'basePath'  => '---',
+				'base_path'  => '---',
 				'path'      => '',
 				'query'     => '',
 				# 'fragment'  => '',
@@ -175,6 +176,8 @@ class IE {
     			$env['REQUEST_URI']
     		)
     	);
+    	
+    	$uri["base_path"] = $path = ltrim(rtrim($uri["path"], "/"), "/") ?: "/";
 		
 		# Request received
 		$this->request = [
@@ -192,7 +195,9 @@ class IE {
 		# Response
 		$this->response = [
 			'status'    => 200,
-			'headers'   => new ContainerCI(new Simple([])),
+			'headers'   => new ContainerCI(new Simple([
+				'Engine' => $this->name . " " . $this->version,
+			])),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'cookie'    => $_COOKIE,
@@ -202,7 +207,8 @@ class IE {
 		$this->routes   = [];
 		
 		self::$instance = $this;
-		ob_start();
+		if ($this->config->get("debug",0) < 3)
+			ob_start();
 	}
 	
 	static function getInstance()
@@ -218,17 +224,14 @@ class IE {
 	 *
 	 * @param String	$class	class to be loaded
 	 */
-	 /*
 	function load($class) 
 	{
 		$aclass = explode("\\",$class);
 		$c = array_pop($aclass);
 		$ns = implode("\\", $aclass);
 		$path = ($ns == "IrfanTOOR\\Engine") ? IE_PATH : ROOT . strtolower(str_replace("\\", "/", $ns)) . "/";
-		#echo $path . str_replace("_", "/", $c) . ".php";
-		@require  $path . str_replace("_", "/", $c) . ".php";
+		require  $path . str_replace("_", "/", $c) . ".php";
 	}
-	*/
 			
 	/**
 	 * Returns the calling trace
@@ -329,7 +332,7 @@ class IE {
 					} else {
 						$method = "default_method";
 						$controller = $callback;
-					}						
+					}
 					$c = new $controller();
 			
 					if (!method_exists($c, $method))
@@ -360,20 +363,21 @@ class IE {
 	 * @param $response null|[]
 	 */
 	function send($response=null) {
-		ob_get_clean();
+		if ($this->config->get("debug",0) < 3)
+			ob_get_clean();
 		
 		if (self::$sent)
 			return;
 		
-		$ie = ie::getInstance();
+		$ie = self::getInstance();
 		
 		if ($response)
 			$ie->response = $response;
 		else
 			$response = $ie->response;
-			
+		
 		$body = $response["body"];
-
+		
 		if (!$body) {
 			$response["status"] = 500;
 			$body = ["500" => "Server Error"];
@@ -393,11 +397,13 @@ class IE {
 					'</code></div>';
 			}
 			
-			echo '<div style="border-left:4px double #36c; padding:6px;">';
-			echo '<div style="color:#d00; padding: 10px; ">' . $ie->name . ' v'. $ie->version . ' -- debug level: ' . $dl . '</div>';
+			$t  = microtime(true) - START;
+			$te = sprintf(' %.2f mili sec.', $t * 1000);
 			
-			$t = microtime(true) - START;
-			$da["Time elapsed"] = sprintf(' %.2f mili sec.', $t * 1000);
+			if ($dl > 1)
+				$da["Time elapsed"] = $te;
+			else
+				$da = $te;
 
 			if ($dl > 1) {
 				$files = get_included_files();
