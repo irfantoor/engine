@@ -22,12 +22,15 @@ class View
 		if (!is_file($view))
 			throw new Exception("ViewNotFoundException: View $this->name($view) not found");
 		
+		extract($data);
+		
 		ob_start();
 		require $view;
 		$view = ob_get_clean();
 		
 		foreach($data as $k=>$v) {
-			$view = preg_replace('|\{\{\s*\$' . $k . '\s*\}\}|s', $v, $view);
+			if (is_string($v))
+				$view = preg_replace('|\{\{\s*\$' . $k . '\s*\}\}|s', $v, $view);
 		}
 		
 		echo $view;

@@ -114,6 +114,7 @@ class IE {
 	{
 		# register the shutdown function
 		register_shutdown_function([$this, "send"]);
+		spl_autoload_register([$this, "load"]);
 		
 		# register the autoload function
 		spl_autoload_register([$this, "load"]);
@@ -334,7 +335,7 @@ class IE {
 					} else {
 						$method = "default_method";
 						$controller = $callback;
-					}						
+					}
 					$c = new $controller();
 			
 					if (!method_exists($c, $method))
@@ -377,9 +378,9 @@ class IE {
 			$ie->response = $response;
 		else
 			$response = $ie->response;
-			
+		
 		$body = $response["body"];
-
+		
 		if (!$body) {
 			$response["status"] = 500;
 			$body = ["500" => "Server Error"];
