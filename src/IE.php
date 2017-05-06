@@ -163,6 +163,7 @@ class IE {
 				'password'  => '',
 				'host'      => isset($env['HTTP_HOST']) ? $env['HTTP_HOST'] : $env['SERVER_NAME'],
 				'port'      => $env['SERVER_PORT'],
+				# 'basePath'  => '---',
 				'path'      => '',
 				'query'     => '',
 				# 'fragment'  => '',
@@ -191,6 +192,7 @@ class IE {
 		# Response
 		$this->response = [
 			'status'    => 200,
+			'headers'   => new ContainerCI(new Simple([])),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'cookie'    => $_COOKIE,
@@ -200,6 +202,7 @@ class IE {
 		$this->routes   = [];
 		
 		self::$instance = $this;
+		ob_start();
 	}
 	
 	static function getInstance()
@@ -215,13 +218,17 @@ class IE {
 	 *
 	 * @param String	$class	class to be loaded
 	 */
+	 /*
 	function load($class) 
 	{
 		$aclass = explode("\\",$class);
 		$c = array_pop($aclass);
 		$ns = implode("\\", $aclass);
 		$path = ($ns == "IrfanTOOR\\Engine") ? IE_PATH : ROOT . strtolower(str_replace("\\", "/", $ns)) . "/";
+		#echo $path . str_replace("_", "/", $c) . ".php";
+		@require  $path . str_replace("_", "/", $c) . ".php";
 	}
+	*/
 			
 	/**
 	 * Returns the calling trace
@@ -353,10 +360,12 @@ class IE {
 	 * @param $response null|[]
 	 */
 	function send($response=null) {
+		ob_get_clean();
 		
 		if (self::$sent)
 			return;
 		
+		$ie = ie::getInstance();
 		
 		if ($response)
 			$ie->response = $response;
@@ -384,7 +393,11 @@ class IE {
 					'</code></div>';
 			}
 			
+			echo '<div style="border-left:4px double #36c; padding:6px;">';
+			echo '<div style="color:#d00; padding: 10px; ">' . $ie->name . ' v'. $ie->version . ' -- debug level: ' . $dl . '</div>';
 			
+			$t = microtime(true) - START;
+			$da["Time elapsed"] = sprintf(' %.2f mili sec.', $t * 1000);
 
 			if ($dl > 1) {
 				$files = get_included_files();
