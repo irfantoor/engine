@@ -2,36 +2,10 @@
 
 namespace IrfanTOOR\Engine;
 
-/*
-	Irfan's Engine
-	==============
-	
-	A bare-minimum PHP framework, with the spirit with which the HTTP was invented.
-	focussing on the requests and the responses. A swiss-knife for world-wide-web.
-	No compliance or gaurantees of any sort. Its a sky-dive in a swim suit!
-	
-	The objective of this library is to be a Bare-minimum, Embeddable and Educative
-*/
+define("START", microtime(1));
+define("PATH",  dirname(__FILE__) . "/");
 
-use IrfanTOOR\Container;
-use IrfanTOOR\ContainerCI;
-use IrfanTOOR\Container\Adapter\Simple;
-use IrfanTOOR\Container\Adapter\Config;
-
-# to keep track of time
-if (!defined('START'))
-	define ('START',  	microtime(true));
-
-if (!defined('ROOT'))
-	define('ROOT', $_SERVER['DOCUMENT_ROOT'] . "/");
-
-if (!defined('APP'))
-	define ('APP',    	ROOT . 'app/');
-	
-define("IE_PATH", dirname(__FILE__) . "/");
-	
-class IE {
-
+class ie {
 	public
 		$name       = "Irfan's Engine",
 		$version    = "0.5",
@@ -44,76 +18,18 @@ class IE {
 				
 		$routes    = [],
 		$data      = [];
-
-    protected static 
+		
+    public static 
     	$sent      = false,
     	$instance  = null;
-		
-    public static $phrases = [
-        100 => 'Continue',
-        101 => 'Switching Protocols',
-        102 => 'Processing',
-        200 => 'OK',
-        201 => 'Created',
-        202 => 'Accepted',
-        203 => 'Non-Authoritative Information',
-        204 => 'No Content',
-        205 => 'Reset Content',
-        206 => 'Partial Content',
-        207 => 'Multi-status',
-        208 => 'Already Reported',
-        300 => 'Multiple Choices',
-        301 => 'Moved Permanently',
-        302 => 'Found',
-        303 => 'See Other',
-        304 => 'Not Modified',
-        305 => 'Use Proxy',
-        306 => 'Switch Proxy',
-        307 => 'Temporary Redirect',
-        400 => 'Bad Request',
-        401 => 'Unauthorized',
-        402 => 'Payment Required',
-        403 => 'Forbidden',
-        404 => 'Not Found',
-        405 => 'Method Not Allowed',
-        406 => 'Not Acceptable',
-        407 => 'Proxy Authentication Required',
-        408 => 'Request Time-out',
-        409 => 'Conflict',
-        410 => 'Gone',
-        411 => 'Length Required',
-        412 => 'Precondition Failed',
-        413 => 'Request Entity Too Large',
-        414 => 'Request-URI Too Large',
-        415 => 'Unsupported Media Type',
-        416 => 'Requested range not satisfiable',
-        417 => 'Expectation Failed',
-        418 => 'I\'m a teapot',
-        422 => 'Unprocessable Entity',
-        423 => 'Locked',
-        424 => 'Failed Dependency',
-        425 => 'Unordered Collection',
-        426 => 'Upgrade Required',
-        428 => 'Precondition Required',
-        429 => 'Too Many Requests',
-        431 => 'Request Header Fields Too Large',
-        451 => 'Unavailable For Legal Reasons',
-        500 => 'Internal Server Error',
-        501 => 'Not Implemented',
-        502 => 'Bad Gateway',
-        503 => 'Service Unavailable',
-        504 => 'Gateway Time-out',
-        505 => 'HTTP Version not supported',
-        506 => 'Variant Also Negotiates',
-        507 => 'Insufficient Storage',
-        508 => 'Loop Detected',
-        511 => 'Network Authentication Required',
-    ];
-    
+
 	function __construct($config=[])
 	{
 		# register the shutdown function
 		register_shutdown_function([$this, "send"]);
+		
+		# regsiter the autoloader
+		# spl_autoload_register([$this, "load"]);
 		
 		set_exception_handler(
 			function($obj) {
@@ -126,10 +42,10 @@ class IE {
 		);
 		
 		# Config Container
-		$this->config = new Container(new Simple($config));
+		$this->config = $config;
 		
 		# default timezone
-		date_default_timezone_set($this->config->get("timezone", "Europe/Paris"));
+		date_default_timezone_set(isset($this->config["timezone"]) ? $this->config["timezone"] : "Europe/Paris");
 		
 		# Session
 		if (!isset($_SESSION))
@@ -139,7 +55,7 @@ class IE {
 		$env = array_merge(
 			$_SERVER, 
 			['session' => $_SESSION],
-			$this->config->get('env', [])
+			(isset($this->config["env"]) ? $this->config['env'] : [])	
 		);
 				
 		# Headers
@@ -154,7 +70,6 @@ class IE {
 		}
 		
 		$env['headers'] = $headers;
-		$this->env = new Container(new Simple($env));
 		
 		$uri = array_merge(
 			[
@@ -163,14 +78,15 @@ class IE {
 				'password'  => '',
 				'host'      => isset($env['HTTP_HOST']) ? $env['HTTP_HOST'] : $env['SERVER_NAME'],
 				'port'      => $env['SERVER_PORT'],
+				# 'basePath'  => '---',
 				'path'      => '',
 				'query'     => '',
 				# 'fragment'  => '',
-    		], 
+    		],
     	
     		parse_url(
     			"http://" . 
-    			(isset($env['HTTP_HOST']) ? $env['HTTP_HOST'] : $env['SERVER_NAME']) . 
+    			(($e = $env['HTTP_HOST']) ? $e : $env['SERVER_NAME']). 
     			$env['REQUEST_URI']
     		)
     	);
@@ -179,7 +95,7 @@ class IE {
 		$this->request = [
 			'method'	=> $env['REQUEST_METHOD'],
 			'uri'       => $uri, #new Container($uri),
-			'headers'   => new ContainerCI(new Simple($env['headers'])),
+			'headers'   => $headers, #$env['headers'], # new ContainerCI($env['headers']),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'get'       => $_GET,
@@ -191,22 +107,22 @@ class IE {
 		# Response
 		$this->response = [
 			'status'    => 200,
+			'headers'   => [
+				"Content-Type" => "text/html",
+				"Engine" => $this->name . " v" . $this->version,
+			], #new ContainerCI([]),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'cookie'    => $_COOKIE,
 		];
 		
+		$this->env = $env;
+		
 		# Routes		
 		$this->routes   = [];
 		
 		self::$instance = $this;
-	}
-	
-	static function getInstance()
-	{
-		if (! self::$instance)
-			return new IE();
-		return self::$instance;
+		ob_start();
 	}
 		
 	/**
@@ -221,6 +137,8 @@ class IE {
 		$c = array_pop($aclass);
 		$ns = implode("\\", $aclass);
 		$path = ($ns == "IrfanTOOR\\Engine") ? IE_PATH : ROOT . strtolower(str_replace("\\", "/", $ns)) . "/";
+		#echo $path . str_replace("_", "/", $c) . ".php";
+		@require  $path . str_replace("_", "/", $c) . ".php";
 	}
 			
 	/**
@@ -229,7 +147,7 @@ class IE {
 	 * @param optional $dbt - debug back trace
 	 * @param optional $full - true if full call trace is requested or just the recent
 	 */
-	static function trace($full=false) {
+	static function trace() {
 		$trace = '';
 		$color = '#d00';
 		
@@ -239,8 +157,8 @@ class IE {
 			$class = isset($er['class'])? $er['class']: '';
 			$func = isset($er['function'])? $er['function']: '';
 
-			if ($func == 'trace' || $func=='error' || $func=='{closure}')
-				continue;
+			#if ($func == 'trace' || $func=='error' || $func=='{closure}')
+			#	continue;
 
 			$func_tag = ($class!='')?$class.'=>'.$func.'()': $func.'()';
 
@@ -252,13 +170,8 @@ class IE {
 				
 				$t = ' -- <span style="color:#999">[<span style="color:'.$color.'">'.$file.'</span>] line:<span style="color:'.$color.'">'.$line.'</span> '.$func_tag.'<br>';
 
-				if ($full) {
-					$trace .= $t;
-					$color = '#36c';
-				}
-				else {
-					if (in_array($func, ['d','dd','dump']))
-						$trace = $t;
+				if (in_array($func, ['d','dd','dump'])) {
+					$trace = $t;
 					break;
 				}
 			}
@@ -288,9 +201,12 @@ class IE {
 		];
 	}
 	
+	/**
+	 * Runs the engine - process route and execute the matching route
+	 */
 	function run() 
 	{
-		$path = ltrim(rtrim($this->request["uri"]["path"], "/"), "/") ?: "/";
+		$path = ($p=ltrim(rtrim($this->request["uri"]["path"], "/"), "/")) ? $p : "/";
 		$method = $this->request["method"];
 		
 		$found = false;		
@@ -352,26 +268,27 @@ class IE {
 	 *
 	 * @param $response null|[]
 	 */
-	function send($response=null) {
-		
+	function send($res=null) {
+		ob_get_clean();
 		if (self::$sent)
 			return;
 		
+		$ie = ie::$instance;
 		
-		if ($response)
-			$ie->response = $response;
+		if ($res)
+			$ie->response = $res;
 		else
-			$response = $ie->response;
+			$res = $ie->response;
 			
-		$body = $response["body"];
+		$body = $res["body"];
 
 		if (!$body) {
-			$response["status"] = 500;
+			$res["status"] = 500;
 			$body = ["500" => "Server Error"];
 		}	
 				
 		### Debug Info according to debug level configured
-		if ($dl = $ie->config->get('debug', 0))
+		if ($dl = isset($ie->config['debug'])? $ie->config['debug'] : 0)
 		{
 			ob_start(); 
 			
@@ -384,7 +301,11 @@ class IE {
 					'</code></div>';
 			}
 			
+			echo '<div style="border-left:4px double #36c; padding:6px;">';
+			# echo '<div style="color:#d00; padding: 10px; ">' . $this->name . ' v'. $this->version . ' -- debug level: ' . $dl . '</div>';
 			
+			$t = microtime(true) - START;
+			$da["Time elapsed"] = sprintf(' %.2f mili sec.', $t * 1000);
 
 			if ($dl > 1) {
 				$files = get_included_files();
@@ -400,7 +321,7 @@ class IE {
 				$da["IE"] = $ie;
 			}
 			
-			self::dump($da);
+			ie::dump($da);
 			
 			echo '</div>';
 			
@@ -410,19 +331,19 @@ class IE {
     	if (!is_string($body)) {
     		$body = json_encode($body);
     		if (!$debug)
-    			$response["headers"]->set("Content-Type", "text/json");
-    	}
+    			$res["headers"]["Content-Type"] = "text/json";
+    	}		
     	    	
 		if ($debug)
 			$body .= $debug;
 		
 		
 		#### Process and send Headers
-    	$response["headers"]->set("Content-Length", strlen($body));
+    	$res["headers"]["Content-Length"] = strlen($body);
     	
-    	header('HTTP/' . $response["version"] . ' ' . $response["status"] . ' ' . self:: $phrases[$response["status"]]);
+    	header('HTTP/' . $res["version"] . ' ' . $res["status"] . ' ' . "--");
     	
-		foreach($response["headers"]->toArray() as $header=>$value) {
+		foreach($res["headers"] as $header=>$value) {
 			$value = is_array($value) ? $value : [$value];
 			$header_string = $header . ": " . implode("' ", $value);
 			header($header_string);
@@ -430,5 +351,5 @@ class IE {
 		
 		### Send the response body
 		echo $body;
-	}	
+	}
 }
