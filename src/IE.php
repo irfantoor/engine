@@ -366,8 +366,9 @@ class IE {
 	 * @param $response null|[]
 	 */
 	function send($response=null) {
+		$ob = "";
 		if ($this->config->get("debug",0) < 3)
-			ob_get_clean();
+			$ob = ob_get_clean();
 		
 		if (self::$sent)
 			return;
@@ -431,17 +432,15 @@ class IE {
 		
     	if (!is_string($body)) {
     		$body = json_encode($body);
-    		if (!$debug)
+    		if (!$dl)
     			$response["headers"]->set("Content-Type", "text/json");
     	}
     	    	
-		if ($debug)
+		if ($dl)
 			$body .= $debug;
 		
 		
 		#### Process and send Headers
-    	$response["headers"]->set("Content-Length", strlen($body));
-    	
     	header('HTTP/' . $response["version"] . ' ' . $response["status"] . ' ' . self:: $phrases[$response["status"]]);
     	
 		foreach($response["headers"]->toArray() as $header=>$value) {
