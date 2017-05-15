@@ -14,9 +14,10 @@ namespace IrfanTOOR\Engine;
 */
 
 use IrfanTOOR\Container;
-use IrfanTOOR\ContainerCI;
-use IrfanTOOR\Container\Adapter\Simple;
-use IrfanTOOR\Container\Adapter\Config;
+use IrfanTOOR\Container\Adapter\ArrayAdapter;
+use IrfanTOOR\Container\Adapter\FileAdapter;
+use IrfanTOOR\Container\Decorator\ReadOnlyDecorator;
+use IrfanTOOR\Container\Decorator\NoCaseDecorator;
 
 # to keep track of time
 if (!defined('START'))
@@ -34,7 +35,7 @@ class IE {
 
 	public
 		$name       = "Irfan's Engine",
-		$version    = "0.5",
+		$version    = "0.6",
 
 		$config,
 		
@@ -114,7 +115,6 @@ class IE {
 	{
 		# register the shutdown function
 		register_shutdown_function([$this, "send"]);
-		spl_autoload_register([$this, "load"]);
 		
 		# register the autoload function
 		spl_autoload_register([$this, "load"]);
@@ -130,7 +130,7 @@ class IE {
 		);
 		
 		# Config Container
-		$this->config = new Container(new Simple($config));
+		$this->config = new Container(new ReadonlyDecorator(new ArrayAdapter($config)));
 		
 		# default timezone
 		date_default_timezone_set($this->config->get("timezone", "Europe/Paris"));
@@ -158,7 +158,7 @@ class IE {
 		}
 		
 		$env['headers'] = $headers;
-		$this->env = new Container(new Simple($env));
+		$this->env = new Container(new ArrayAdapter($env));
 		
 		$uri = array_merge(
 			[
@@ -186,7 +186,7 @@ class IE {
 		$this->request = [
 			'method'	=> $env['REQUEST_METHOD'],
 			'uri'       => $uri, #new Container($uri),
-			'headers'   => new ContainerCI(new Simple($env['headers'])),
+			'headers'   => new Container(new NoCaseDecorator(new ArrayAdapter($env['headers']))),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'get'       => $_GET,
@@ -198,9 +198,9 @@ class IE {
 		# Response
 		$this->response = [
 			'status'    => 200,
-			'headers'   => new ContainerCI(new Simple([
+			'headers'   => new Container(new NoCaseDecorator(new ArrayAdapter([
 				'Engine' => $this->name . " " . $this->version,
-			])),
+			]))),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'cookie'    => $_COOKIE,
