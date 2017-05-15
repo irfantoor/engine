@@ -198,9 +198,9 @@ class IE {
 		# Response
 		$this->response = [
 			'status'    => 200,
-			'headers'   => new Container(new NoCaseDecorator(new ArrayAdapter([
+			'headers'   => new Container(new NoCaseDecorator(new ArrayAdapter), [
 				'Engine' => $this->name . " " . $this->version,
-			]))),
+			]),
 			'body'      => null,
 			'version'   => substr($env['SERVER_PROTOCOL'], 5),
 			'cookie'    => $_COOKIE,
