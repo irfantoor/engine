@@ -74,7 +74,7 @@ class Engine extends Collection
         # Process
         $base_path = ltrim(rtrim($uri['path'], '/'), '/') ?: '/';
 		$method = $request['method'];
-        $match = $this->getRouter()->process($method, $uri);
+        $match = $this->getRouter()->process($method, $base_path);
 
         $callable = $match['callable'];
 
