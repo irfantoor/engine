@@ -1,8 +1,7 @@
 <?php
 
-namespace IrfanTOOR\Engine;
+namespace IrfanTOOR;
 
 class Exception extends \Exception
 {
-    
 }
