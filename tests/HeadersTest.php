@@ -1,6 +1,6 @@
 <?php
 
-use IrfanTOOR\Headers;
+use IrfanTOOR\Engine\Http\Headers;
 use PHPUnit\Framework\TestCase;
 
 class HeadersTest extends TestCase
@@ -16,8 +16,8 @@ class HeadersTest extends TestCase
     function testHeadersInstance()
     {
         $h = $this->getHeaders();
-        $this->assertInstanceOf('IrfanTOOR\Headers', $h);
-        $this->assertInstanceOf('IrfanTOOR\Collection', $h);
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Headers::class, $h);
+        $this->assertInstanceOf(IrfanTOOR\Collection::class, $h);
     }
 
     function testCaseInsensitive()

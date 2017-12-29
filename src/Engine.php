@@ -2,123 +2,193 @@
 
 namespace IrfanTOOR;
 
-use IrfanTOOR\Debug;
-use IrfanTOOR\Exception;
-use IrfanTOOR\Request;
-use IrfanTOOR\Response;
-use IrfanTOOR\Ruotes;
-use IrfanTOOR\Uri;
+use IrfanTOOR\Collection;
+use IrfanTOOR\Container;
+use IrfanTOOR\Engine\Debug;
+use IrfanTOOR\Engine\Http\Cookies;
+use IrfanTOOR\Engine\Http\Environment;
+use IrfanTOOR\Engine\Http\Request;
+use IrfanTOOR\Engine\Http\Response;
+use IrfanTOOR\Engine\Http\ResponseStatus;
+use IrfanTOOR\Engine\Http\Uri;
+use IrfanTOOR\Engine\Middleware;
+use IrfanTOOR\Engine\Router;
 
-class Engine extends Collection
+class Engine
 {
-    const
-        NAME    = "Irfan's Engine",
-        VERSION = '0.1';
+    # use MiddlewareAwareTrait;
 
-    protected static $instance;
+    /**
+     * Singleton instance
+     *
+     * @var string
+     */
+    protected static
+        $instance;
 
-    protected
-        $config,
-        $env,
-        $router;
+    /**
+     * Current version
+     *
+     * @var string
+     */
+    const VERSION = '1.0';
 
-    function __construct($config = [])
+
+    /**
+     * Configuration
+     *
+     * @var Collection
+     */
+    protected $config;
+
+    protected $data;
+
+    /**
+     * Container
+     *
+     * @var Container
+     */
+    private $container;
+
+    function __construct($config=[])
     {
-        self::$instance = $this;
-
-        error_reporting(0);
-        register_shutdown_function([$this, 'shutdown']);
+        static::$instance = $this;
 
         $this->config = new Collection($config);
-        $this->config->lock();
+        Debug::enable($this->config('debug.level', 0));
+        $this->data = $this->config('data', []);
 
-        date_default_timezone_set($this->config('timezone', 'Europe/Paris'));
+        $c = $this->container = new Container();
 
-        if (($dl = $this->config['debug']['level'] ?: 0)) {
-            Debug::enable($dl);
+        # todo later in a separate file
+        $c['router']      = function() {
+            return new Router();
+        };
+
+        $c['environment'] = function() {
+            return new Environment();
+        };
+
+        $c['uri']         = function() {
+            $c = Engine::instance()->container();
+            return Uri::createFromEnvironment($c['environment']);
+        };
+
+        $c['cookies']     = function() {
+            return new Cookies($_COOKIE);
+        };
+
+        $c['request']     = function() {
+            return Request::createFromEnvironment();
+        };
+
+        $c['response']    = function() {
+            return new Response();
+        };
+    }
+
+    static function instance()
+    {
+        return static::$instance;
+    }
+
+    function config($id, $default = null)
+    {
+        return $this->config->get($id, $default);
+    }
+
+    function data()
+    {
+        return $this->data;
+    }
+
+    function container() {
+        return $this->container;
+    }
+
+    /**
+     * Calling a non-existant method on App checks to see if there's an item
+     * in the container that is callable and if so, calls it.
+     *
+     * @param  string $method
+     * @param  array $args
+     * @return mixed
+     */
+    public function __call($method, $args)
+    {
+        if ($this->container->has($method)) {
+            $obj = $this->container->get($method);
+            if (is_callable($obj)) {
+                return call_user_func_array($obj, $args);
+            }
         }
 
-        ob_start();
-        #Autoload::register();
-        $this->env = new Environment($this->config('env', []));
+        throw new \BadMethodCallException("Method $method is not a valid method");
     }
 
-    function config($key, $default=null)
+    function addRoute($method, $path, $handler)
     {
-        return $this->config->get($key, $default);
+        $r = $this->container->get('router');
+        $r->addRoute($method, $path, $handler);
     }
 
-    function getRouter() {
-        if (!$this->router)
-            $this->router = new Router();
+    function finalize(Response $response)
+    {
+        extract($response->toArray());
 
-        return $this->router;
-    }
+        $size = mb_strlen($body);
+        if ($size !== null && !$headers->has('Content-Length')) {
+            # $headers->set('Content-Length', (string) $size);
+            $response = $response->with('headers', $headers);
+        }
 
-    function setRouter($router) {
-        $this->router = $router;
-    }
-
-    function addRoute($method, $patern, $callable) {
-        $router = $this->getRouter();
-        $router->add($method, $patern, $callable);
+        return $response;
     }
 
     function run()
     {
-        # Initialize
-        $request  = new Request($this->env);
-        $response = new Response();
-        $uri = $request['uri'];
+        $request  = $this->container['request'];
+        $response = $this->container['response'];
+        $router   = $this->container['router'];
 
-        # Process
-        $base_path = ltrim(rtrim($uri['path'], '/'), '/') ?: '/';
-		$method = $request['method'];
-        $match = $this->getRouter()->process($method, $base_path);
+        $uri      = $request['uri'];
+        $path     = $uri['base_path'];
 
-        $callable = $match['callable'];
+        if ($path === '/')
+            $args = [];
+        else
+            $args = explode('/', htmlspecialchars($path));
 
-        switch ($match['type']) {
+        $route    = $router->process($request['method'], $path);
+        extract($route);
+
+        switch ($type) {
             case 'closure':
-                $response = $callable($request, $response);
+                $response = $handler($request, $response, $args);
                 break;
 
             case 'string':
-                if (($pos = strpos($callable, '@')) !== FALSE) {
-                    $method = substr($callable, 0, $pos);
-                    $controller = substr($callable, $pos+1);
+                if (($pos = strpos($handler, '@')) !== FALSE) {
+                    $method = substr($handler, 0, $pos);
+                    $cname  = substr($handler, $pos + 1);
                 } else {
-                    $method = 'default_method';
-                    $controller = $callable;
+                    $method = 'defaultMethod';
+                    $cname  = $handler;
                 }
-                $c = new $controller();
+                $class = new $cname($this);
 
-                if (!method_exists($c, $method))
-                    $method  = 'default_method';
+                if (!method_exists($class, $method))
+                    $method  = 'defaultMethod';
 
-                $response = $c->$method($request, $response);
+                $response = $class->$method($request, $response, $args);
                 break;
 
             default:
-                $response['status'] = 404;
-                break;
+                $response = $response
+                    ->with('status', ResponseStatus::STATUS_NOT_FOUND)
+                    ->with('body', 'no route defined!');
         }
 
-        $response->send();
-        die();
-    }
-
-    function shutdown()
-    {
-        if (ob_get_level())
-            ob_flush();
-
-        if ($this->config['debug']['level']) {
-            Debug::banner();
-            if (Debug::level()>2){
-                $this->getRouter()->dump();
-                Debug::table($this->env->toArray(),['Keys', 'Values'], 'Environment');
-            }
-        }
+        $this->finalize($response)->send();
     }
 }

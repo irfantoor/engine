@@ -1,6 +1,6 @@
 <?php
 
-use IrfanTOOR\Environment;
+use IrfanTOOR\Engine\Http\Environment;
 use PHPUnit\Framework\TestCase;
 
 class EnvironmentTest extends TestCase
@@ -8,16 +8,17 @@ class EnvironmentTest extends TestCase
     function testCollectionInstance()
     {
         $e = new Environment();
-        $this->assertInstanceOf('IrfanTOOR\Environment', $e);
-        $this->assertInstanceOf('IrfanTOOR\Collection', $e);
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Environment::class, $e);
+        $this->assertInstanceOf(IrfanTOOR\Collection::class, $e);
     }
 
     function testServerParameters()
     {
-        $e = Environment::getInstance();
-        $env = array_merge($_SERVER, ['session'=>$_SESSION]);
+        $env = new Environment();
 
-        $this->assertEquals($env, $e->toArray());
+        foreach($_SERVER as $k=>$v) {
+            $this->assertEquals($v, $env->get($k));
+        }
     }
 
     function testMockingEnv()
@@ -27,27 +28,13 @@ class EnvironmentTest extends TestCase
             'Hello'        => 'World!',
         ];
 
-        $e = new Environment($mock);
+        $env = new Environment($mock);
 
-        $env = array_merge($_SERVER, $mock, ['session'=>$_SESSION]);
+        $menv = array_merge($_SERVER, $mock);
 
         # Mocked Environment variables are added/modified
-        $this->assertEquals(0, $e['REQUEST_TIME']);
-        $this->assertEquals('World!', $e['Hello']);
-
-        $this->assertEquals($env, $e->toArray());
-
-        # Environment is locked
-        $e->remove('Hello');
-        $this->assertTrue($e->has('Hello'));
-        $this->assertEquals('World!', $e['Hello']);
-    }
-
-    function testGetInstance()
-    {
-        $e = Environment::getInstance();
-        $e2 = Environment::getInstance();
-        $this->assertEquals($e, $e2);
-        $this->assertSame($e, $e2);
+        foreach($menv as $k=>$v) {
+            $this->assertEquals($v, $env->get($k));
+        }
     }
 }

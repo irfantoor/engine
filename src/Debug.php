@@ -1,78 +1,58 @@
 <?php
 
-namespace IrfanTOOR;
+namespace IrfanTOOR\Engine;
 
+use IrfanTOOR\Console;
+
+/**
+ * Debugging while developement
+ */
 class Debug
 {
     protected static
-        $terminal = 0,
-        $abort    = false,
-        $level    = 0;
+        $error    = 0,
+        $level    = 0,
+        $terminal = 0;
 
-    static function enable($level = 1) {
+    static function enable($level = 1)
+    {
+        if (isset($_SERVER['TERM']))
+            self::$terminal = new Console();
+
         self::$level = $level;
-        if ($level) {
-            if ($level>2)
-                error_reporting(E_ALL);
-            else
-                error_reporting(E_ALL && ~E_NOTICE);
+        register_shutdown_function(['\IrfanTOOR\Engine\Debug', 'shutdown']);
+        if ($level < 3)
+            ob_start();
 
-            set_exception_handler(function($obj){
-                self::exceptionHandler($obj);
-            });
-
-            self::$terminal = isset($_SERVER['TERM']) || isset($_SERVER['TERM_PROGRAM']) || isset($_SERVER['SHELL']);
-        } else {
+        if ($level>2)
+            error_reporting(E_ALL);
+        elseif($level)
+            error_reporting(E_ALL && ~E_NOTICE);
+        else
             error_reporting(0);
-        }
-    }
 
-    static function exceptionHandler($e) {
-        self::$abort = true;
-        if (!self::level())
-            return;
-
-        if (is_object($e)) {
-            $class   = 'Exception';
-            $message = $e->getMessage();
-            $file    = self::limitPath($e->getFile());
-            $line    = $e->getLine();
-            $type    = '';
-            $trace   = $e->getTrace();
-        }
-        else {
-            $class = 'Error';
-            extract($e);
-            $type .= ' - ';
-        }
-
-        $body =
-        '<div style="border-left:4px solid #d00; padding:6px;">' .
-            '<div style="color:#d00">' . $class . ': ' . $type . $message . '</div><code style="color:#999">file: ' .
-            $file . ', line: ' . $line .
-            '</code></div>';
-
-        echo $body;
-        self::trace($trace);
+        set_exception_handler(function($obj){
+            self::exceptionHandler($obj);
+        });
     }
 
     static function level()
     {
-        return self::$level;
+        return static::$level;
     }
 
-    static function limitPath($file)
+    static function dump($var, $trace=1)
     {
-        $x = explode('/', $file);
-        $l = count($x);
-        return ($l>1) ? $x[$l-2] . '/' . $x[$l-1] : $file;
-    }
-
-    static function dump($v, $trace=true) {
-        if (self::$level == 0)
+        if (!self::$level)
             return;
 
-        self::writeln($v, 'color:blue');
+        if (self::$terminal) {
+            self::$terminal->writeln(print_r($var, 1), 'light_cyan');
+        } else {
+            $txt = preg_replace('/\[(.*)\]/u', '[<span style="color:#d00">$1</span>]', print_r($var, 1));
+            echo '<pre style="color:blue">' . $txt . "</pre>";
+        }
+
         if ($trace)
             self::trace();
     }
@@ -92,114 +72,79 @@ class Debug
                 if ($class == 'IrfanTOOR\Debug' && $func=='trace')
                     continue;
 
-                $ftag  = ($class != '') ? $class . '=>' . $func . '()' : $func . '()';
-                self::writeln( '-- file: ' . $file . ', line: ' . $line . ', ' . $ftag, 'color:#999');
+                $ftag = ($class != '') ? $class . '=>' . $func . '()' : $func . '()';
+                $txt = '-- file: ' . $file . ', line: ' . $line . ', ' . $ftag;
+                if (self::$terminal)
+                    self::$terminal->writeln( $txt, 'color_111');
+                else
+                    echo '<code style="color:#999">' . $txt . '</code><br>';
             }
         }
     }
 
-    static function banner()
+    static function limitPath($file)
     {
-        if (self::$abort)
+        $x = explode('/', $file);
+        $l = count($x);
+        return ($l>1) ? $x[$l-2] . '/' . $x[$l-1] : $file;
+    }
+
+    static function exceptionHandler($e) {
+        ob_get_clean();
+
+        self::$error = true;
+
+        if (!self::$level)
             return;
 
+        if (is_object($e)) {
+            $class   = 'Exception';
+            $message = $e->getMessage();
+            $file    = self::limitPath($e->getFile());
+            $line    = $e->getLine();
+            $type    = '';
+            $trace   = $e->getTrace();
+        }
+        else {
+            $class = 'Error';
+            extract($e);
+            $type .= ' - ';
+        }
+
+        if (self::$terminal) {
+            self::$terminal->writeln([$class . ': ' . $type . $message], ['white','bg_red']);
+            self::$terminal->writeln('file ' . $file . ', line: ' . $line , 'cyan');
+        } else {
+            $body =
+            '<div style="border-left:4px solid #d00; padding:6px;">' .
+                '<div style="color:#d00">' . $class . ': ' . $type . $message . '</div><code style="color:#999">file: ' .
+                $file . ', line: ' . $line .
+                '</code></div>';
+
+            echo $body;
+        }
+        self::trace($trace);
+    }
+
+    static function shutdown()
+    {
+        if (self::$error)
+            return;
+
+        if (ob_get_level() > 0)
+            ob_get_flush();
+
         if (self::$level) {
-            self::writeln('');
+            echo (self::$terminal ? PHP_EOL : '<br>');
             $t  = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
             $te = sprintf(' %.2f mili sec.', $t * 1000);
             # self::dump('elapsed time: ' . $te, 0);
-            self::table(['Elapsed time: ' . $te]);
+            self::dump('Elapsed time: ' . $te, 0);
         }
 
         if (self::$level > 1) {
             $files = get_included_files();
-            foreach ($files as $k=>$file) {
-                $list[] = [$k+1, str_replace(ROOT, '', $file)];
-            }
-            self::table($list, ['No','Shortened path'], 'Files');
+            self::dump($files, 0);
         }
-    }
-
-    static function table($data, $headers=null, $title=null) {
-        if (!is_array($data)) {
-            print_r($data);
-            return;
-        }
-
-        if ($title)
-            echo '<br><code><strong>'.$title.'</strong></code>';
-
-        echo '<code><table style="border:1px solid #ccc">';
-
-        if ($headers) {
-            echo '<tr style="background-color:#d00;color:#fff;">';
-            if (!is_array($headers))
-                $headers = [$headers];
-            foreach($headers as $header) {
-                echo "<th>$header</th>";
-            }
-            echo '</tr>';
-        }
-
-        if (!is_array($data))
-            $data = [$data];
-
-        foreach($data as $r=>$row) {
-            echo '<tr style="background:#eef">';
-            if (!is_array($row))
-                $row = [$row];
-
-            if (!is_int($r))
-                echo '<td>'.$r.'</td>';
-
-            foreach($row as $item) {
-                     echo '<td>';
-                     self::table($item);
-                     echo '</td>';
-            }
-            echo '</tr>';
-        }
-        echo '</table></code>';
-    }
-
-    static function write($txt, $styles = null) {
-        if (self::$terminal) {
-            print_r($txt);
-            return;
-        }
-
-        $pre = $post = "";
-        if ($styles) {
-            if (!is_array($styles)) {
-                $styles = [$styles];
-            }
-            $sep = $class = "";
-            foreach($styles as $style) {
-                $class .= $sep . $style;
-                $sep = "; ";
-            }
-            $pre = '<code style="'.$class.'">';
-            $post = "</code>";
-        }
-        if (!is_string($txt)) {
-            if ($styles) {
-                $pre = str_replace('code', 'pre', $pre);
-                $post = str_replace('code', 'pre', $post);
-            } else {
-                $pre = '<pre>';
-                $post = '</pre>';
-            }
-            $txt = preg_replace('/\[(.*)\]/U', '[<span style="color:#d00">$1</span>]', print_r($txt, 1));
-        }
-        echo $pre;
-        print_r($txt);
-        echo $post;
-    }
-
-    static function writeln($txt, $styles=null)
-    {
-        self::write($txt, $styles);
-        if (is_string($txt))
-            echo (self::$terminal ? PHP_EOL : '<br />');
     }
 }

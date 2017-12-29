@@ -1,6 +1,6 @@
 <?php
 
-use IrfanTOOR\Uri;
+use IrfanTOOR\Engine\Http\Uri;
 use PHPUnit\Framework\TestCase;
 
 class UriTest extends TestCase
@@ -12,46 +12,40 @@ class UriTest extends TestCase
 
     function testUriInstance()
     {
-        $u = $this->getUri();
-        $this->assertInstanceOf('IrfanTOOR\Uri', $u);
-        $this->assertInstanceOf('IrfanTOOR\Collection', $u);
+        $uri = $this->getUri();
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Uri::class, $uri);
+        $this->assertInstanceOf(IrfanTOOR\Collection::class, $uri);
     }
 
     function testDefault()
     {
-        $u = $this->getUri();
+        $uri = $this->getUri();
 
-        $expected = [
-            'scheme'    => '',
-            'user'      => '',
-            'pass'      => '',
-            'host'      => '',
-            'port'      => '',
-            'base_path' => '/',
-            'path'      => '',
-            'query'     => '',
-            'fragment'  => '',
-        ];
-
-        $this->assertEquals($expected, $u->toArray());
+        $this->assertEquals('', $uri->get('scheme'));
+        $this->assertEquals('', $uri->get('user'));
+        $this->assertEquals('', $uri->get('pass'));
+        $this->assertEquals('', $uri->get('host'));
+        $this->assertEquals(null, $uri->get('port'));
+        $this->assertEquals('', $uri->get('query'));
+        $this->assertEquals('', $uri->get('fragment'));
+        $this->assertEquals('', $uri->get('userinfo'));
+        $this->assertEquals('', $uri->get('authority'));
+        $this->assertEquals('', $uri->get('basepath'));
     }
 
     function testParsing()
     {
-        $u = $this->getUri("https://user:password@sub.host.com:8080/path/to/some/place/?hello=world#one");
+        $uri = $this->getUri("https://user:password@sub.host.com:8080/path/to/some/place/?hello=world#one");
 
-        $expected = [
-            'scheme'    => 'https',
-            'user'      => 'user',
-            'pass'      => 'password',
-            'host'      => 'sub.host.com',
-            'port'      => 8080,
-            'base_path' => 'path/to/some/place',
-            'path'      => '/path/to/some/place/',
-            'query'     => 'hello=world',
-            'fragment'  => 'one',
-        ];
-
-        $this->assertEquals($expected, $u->toArray());
+        $this->assertEquals('https', $uri->get('scheme'));
+        $this->assertEquals('user', $uri->get('user'));
+        $this->assertEquals('password', $uri->get('pass'));
+        $this->assertEquals('sub.host.com', $uri->get('host'));
+        $this->assertEquals(8080, $uri->get('port'));
+        $this->assertEquals('hello=world', $uri->get('query'));
+        $this->assertEquals('one', $uri->get('fragment'));
+        $this->assertEquals('user:password', $uri->get('userinfo'));
+        $this->assertEquals('user:password@sub.host.com:8080', $uri->get('authority'));
+        $this->assertEquals('path/to/some/place', $uri->get('basepath'));
     }
 }
