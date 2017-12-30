@@ -62,6 +62,9 @@ class Headers extends Collection
 
     public function setItem($id, $value=null)
     {
+        if (!is_array($value))
+            $value = [$value];
+            
         parent::setItem(strtolower($id), ['id' => $id, 'value'=>$value]);
     }
 

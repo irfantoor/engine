@@ -5,101 +5,27 @@ namespace IrfanTOOR\Engine\Http;
 use InvalidArgumentException;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Engine\Http\Headers;
-use IrfanTOOR\Engine\Http\Stream;
+use Psr\Http\Message\StreamInterface;
 
-
-class Message extends Collection
+class Message
 {
-    /**
-     * A map of valid protocol versions
-     *
-     * @var array
-     */
-    protected static $valid_protocol_versions = [
-        '1.0' => true,
-        '1.1' => true,
-        '2.0' => true,
-        '2' => true,
-    ];
+    protected $version;
+    protected $headers;
+    protected $body;
 
-    protected static $defaults = [
-        'version' => '1.1',
-        'headers' => null,
-        'body'    => null,
-    ];
-
-    public function __construct()
+    public function __construct($version = '1.1', $headers = [], $body = null)
     {
-        parent::__construct(self::$defaults);
-        $this->_process();
+        $this->version = $version;
+        $this->headers = new Headers($headers);
+        $this->body = $body ? $body : new Stream(fopen('php://temp', 'rw+'));
     }
 
     /**
-     * process calls like withScheme, withHost ...
+     * Disable magic setter to ensure immutability
      */
-    private function _with($what, $args=[])
+    public function __set($name, $value)
     {
-        if (($c = count($args)) == 1) {
-            if ($args[0] === $this->get($what)) {
-                return $this;
-            }
-        } else {
-            if ($args[1] === $this->get($what)->get($args[0])) {
-                return $this;
-            }
-        }
-
-        $clone = clone $this;
-
-        if ($c == 1) {
-            $clone->set($what, $args[0]);
-        } else {
-            $clone->get($what)->set($args[0], $args[1]);
-        }
-        print_r([$clone]);
-
-        return $clone;
-    }
-
-    /*
-     * Process the contents after a call of type withXxxx e.g. withPort(8080)
-     */
-    private function _process() {
-        # Extract
-        extract ($uri = $this->toArray());
-
-        # Validate/normalize the data
-        foreach($uri as $k => $v) {
-            switch($k) {
-                case 'version':
-                    if (!isset(self::$valid_protocol_versions[$version])) {
-                        throw new InvalidArgumentException(
-                            'Invalid HTTP version. Must be one of: '
-                            . implode(', ', array_keys(self::$valid_protocol_versions))
-                        );
-                    }
-                    break;
-
-                case 'headers':
-                    if (!$headers)
-                        $headers = new Headers();
-                    break;
-
-                case 'body':
-                    if (!$body)
-                        $body = new Stream();
-                    break;
-
-                default:
-                    # nothing to filter :)
-            }
-        }
-
-        # Process
-
-        # Update
-        foreach($uri as $k=>$v)
-            $this->set($k, $$k);
+        // Do nothing
     }
 
     /**
@@ -107,7 +33,7 @@ class Message extends Collection
      */
     public function getProtocolVersion()
     {
-        return $this->get('version');
+        return $this->version;
     }
 
     /**
@@ -115,7 +41,12 @@ class Message extends Collection
      */
     public function withProtocolVersion($version)
     {
-        return $this->_with('version', [$version]);
+        if ($version === $this->version)
+            return $this;
+
+        $clone = clone $this;
+        $clone->version = $version;
+        return $clone;
     }
 
     /*******************************************************************************
@@ -129,7 +60,12 @@ class Message extends Collection
      */
     public function getHeaders()
     {
-        return $this->get('headers');
+        // $headers = [];
+        // foreach($this->headers as $k=>$v) {
+        //     $headers[$v['id']] = $v['value'];
+        // }
+        // return $headers;
+        return $this->headers->toArray();
     }
 
     /**
@@ -139,7 +75,8 @@ class Message extends Collection
      */
     public function hasHeader($name)
     {
-        return $this->get('headers')->has($name);
+        #return isset($this->headers[strtolower($name)]);
+        return $this->headers->has($name);
     }
 
     /**
@@ -149,7 +86,12 @@ class Message extends Collection
      */
     public function getHeader($name)
     {
-        return $this->get('headers')->get($name, []);
+        // $sname = strtolower($name);
+        //
+        // return isset($this->headers[$sname])
+        //     ? $this->headers[$sname]['value']
+        //     : [];
+        return $this->headers->get($name, []);
     }
 
     /**
@@ -159,7 +101,7 @@ class Message extends Collection
      */
     public function getHeaderLine($name)
     {
-        return implode(',', $this->get('headers')->get($name, []));
+        return implode(', ', $this->getHeader($name));
     }
 
     /**
@@ -169,7 +111,9 @@ class Message extends Collection
      */
     public function withHeader($name, $value)
     {
-        return $this->_with('header', [$name, $value]);
+        $clone = clone $this;
+        $clone->headers->set($name, $value);
+        return $clone;
     }
 
     /**
@@ -179,10 +123,9 @@ class Message extends Collection
      */
     public function withAddedHeader($name, $value)
     {
-        $v = $this->get('headers')->get($name, []);
-        $v[] = $value;
-
-        return $this->withHeader($name, $value);
+        $clone = clone $this;
+        $clone->headers->add($name, $value);
+        return $clone;
     }
 
     /**
@@ -192,12 +135,11 @@ class Message extends Collection
      */
     public function withoutHeader($name)
     {
-        $headers = $this->get('headers');
-        if (!$headers->has($name))
+        if (!$this->hasHeader($name))
             return $this;
 
         $clone = clone $this;
-        $clone->get('headers')->remove($name);
+        $clone->headers->remove($name);
         return $clone;
     }
 
@@ -235,5 +177,11 @@ class Message extends Collection
         $clone->body = $body;
 
         return $clone;
+    }
+
+    function __clone()
+    {
+        # Clones Headers after PHP clone call
+        $this->headers = new Headers($this->headers->toArray());
     }
 }

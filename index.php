@@ -9,6 +9,7 @@ use IrfanTOOR\Engine\Debug;
 use IrfanTOOR\Engine\Router;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Headers;
+use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\Response;
 
@@ -45,46 +46,14 @@ Debug::enable(1);
 
 # Debug::dump($e);
 
-class A extends Response
-{
-    function __construct()
-    {
-        parent::__construct();
-        # $this->headers = new Headers(['hello' => 'world']);
-        $this->get('headers')->set(['hello'=>'world!']);
-    }
 
-    function withHello($salutation)
-    {
-        $copier = new DeepCopy();
-        $clone = $copier->copy($this);
-        #$clone = clone $this;
+// $a = new Message('1.0', ['hello' => 'world!']);
+// $b = $a->withHeader('hellO', 'again');
+// $c = $b->withProtocolVersion('1.1');
+// Debug::dump(assert($a != $b) ? 'T' : 'F');
+// Debug::dump(assert($a !== $b) ? 'T' : 'F');
+// Debug::dump($a->getHeaders());
+// Debug::dump($c->getHeaders());
 
-        # $clone->set('headers', new Headers($this->get('headers')->toArray()));
-        $clone->get('headers')->set(['hello'=>'again!']);
-
-        return $clone;
-    }
-}
-
-$a = new A();
-$b = $a->withHello('again');
-#$b->set('name', 'B');
-
-
-Debug::dump(assert($a != $b) ? 'T' : 'F');
-Debug::dump(assert($a !== $b) ? 'T' : 'F');
-
-
-#$b->set('hello', 'world');
-
-//
-// Debug::dump(assert($h1 == $h2) ? 'T' : 'F');
-// Debug::dump(assert($h1 == $h2) ? 'T' : 'F');
-//
-// Debug::dump($h1);
-// Debug::dump($h2);
-//
-
-
-Debug::dump([$a, $b]);
+$req = Request::createFromEnvironment();
+Debug::dump($req);
