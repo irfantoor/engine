@@ -89,12 +89,14 @@ class Request extends Message implements RequestInterface
         array $files  = null
     )
     {
-        paretn::__construct($version = '1.1', $headers = null, $body = null);
-        $this->method  =  $method;
-        $this->uri     = $uri;
-        $this->server  = $server;
-        $this->cookie  = $cookie;
-        $this->files   = $files;
+        parent::__construct($version = '1.1', $headers = null, $body = null);
+        $this->set([
+            'method' => $method,
+            'uri'    => $uri,
+            'server' => $server,
+            'cookie' => $cookie,
+            'files'  => $files,
+        ]);
     }
 
     /**
@@ -105,9 +107,9 @@ class Request extends Message implements RequestInterface
      */
     public function __clone()
     {
-        $this->headers = clone $this->headers;
-        $this->attributes = clone $this->attributes;
-        $this->body = clone $this->body;
+        $this->set('headers', clone $this->get('headers'));
+        $this->set('attributes', clone $this->get('attributes'));
+        $this->set('body', clone $this->get('body'));
     }
 
     /**
@@ -128,7 +130,7 @@ class Request extends Message implements RequestInterface
      */
     public function getRequestTarget()
     {
-        return ($this->uri ? $this->uri->toString() : '/');
+        return ($this->get('uri')->toString());
     }
 
     /**
@@ -154,7 +156,7 @@ class Request extends Message implements RequestInterface
             return $this;
 
         $clone = clone $this;
-        $clone->uri = Uri::createFromString($requestTarget);
+        $clone->set('uri', Uri::createFromString($requestTarget));
         return $clone;
     }
 
@@ -165,7 +167,7 @@ class Request extends Message implements RequestInterface
      */
     public function getMethod()
     {
-        return $this->method;
+        return $this->get('method');
     }
 
     /**
@@ -185,11 +187,11 @@ class Request extends Message implements RequestInterface
      */
     public function withMethod($method)
     {
-        if ($this->method == $method)
+        if ($method == $this->getMethod())
             return $this;
 
         $clone = clone $this;
-        $clone->method = $method;
+        $clone->set('method', $method);
         return $clone;
     }
 
@@ -204,7 +206,7 @@ class Request extends Message implements RequestInterface
      */
     public function getUri()
     {
-        return $this->uri;
+        return $this->get('uri');
     }
 
     /**
@@ -252,7 +254,6 @@ class Request extends Message implements RequestInterface
                 $clone->headers->set('Host', $uri->getHost());
             }
         }
-
         return $clone;
     }
 
@@ -379,7 +380,9 @@ class Request extends Message implements RequestInterface
      *     array MUST be returned if no data is present.
      */
     public function getUploadedFiles()
-    {}
+    {
+        
+    }
 
     /**
      * Create a new instance with the specified uploaded files.

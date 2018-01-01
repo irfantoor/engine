@@ -47,13 +47,15 @@ Debug::enable(1);
 # Debug::dump($e);
 
 
-// $a = new Message('1.0', ['hello' => 'world!']);
-// $b = $a->withHeader('hellO', 'again');
-// $c = $b->withProtocolVersion('1.1');
-// Debug::dump(assert($a != $b) ? 'T' : 'F');
-// Debug::dump(assert($a !== $b) ? 'T' : 'F');
-// Debug::dump($a->getHeaders());
-// Debug::dump($c->getHeaders());
+$a = new Message('1.0', ['hello' => 'world!']);
+$b = $a->withHeader('hellO', 'again');
+$c = $b->withProtocolVersion('1.1');
+$c->getBody()->write('wake up neo!');
 
-$req = Request::createFromEnvironment();
-Debug::dump($req);
+Debug::dump(assert($a != $b) ? 'T' : 'F');
+Debug::dump(assert($a !== $b) ? 'T' : 'F');
+Debug::dump($a->getHeaders());
+Debug::dump($c->toArray());
+
+// $req = Request::createFromEnvironment();
+// Debug::dump($req);

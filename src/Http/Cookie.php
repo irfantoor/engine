@@ -4,22 +4,17 @@
  *
  * @author    Irfan TOOR <email@irfantoor.com>
  * @copyright 2017 Irfan TOOR
- * @license   https://github.com/irfantoor/collection/blob/master/LICENSE (MIT License)
+ * @license   https://github.com/irfantoor/engine/blob/master/LICENSE (MIT License)
  */
 
 namespace IrfanTOOR\Engine\Http;
 
 use IrfanTOOR\Collection;
 
-/**
- * Cookie
- */
 class Cookie extends Collection
 {
-    protected $received = [];
-
     protected $defaults = [
-        'value' => '',
+        'value' => [],
         'domain' => null,
         'hostonly' => null,
         'path' => null,
@@ -30,10 +25,9 @@ class Cookie extends Collection
 
     function __construct($cookie=[])
     {
-        $this->received = $cookie;
-
         parent::__construct($this->defaults);
         $this->set('expires', time()+24*60*60);
+        $this->set($cookie);
     }
 
     /**
@@ -46,30 +40,24 @@ class Cookie extends Collection
         $this->defaults = array_replace($this->defaults, $settings);
     }
 
-    public function get($name, $default = null)
+    public function get($id, $default = null)
     {
-        return isset($this->received[$name]) ? $this->received[$name] : $default;
+        if ($this->has($id))
+            return parent::get($id);
+
+        if ($this->has('value.' . $id))
+            return parent::get('value.' . $id);
+
+        return $default;
     }
 
+    # used by set
     public function _setItem($id, $value)
     {
-        if ($this->has($k)) {
-            if ($k == 'value') {
-                $new = parent::get('value', []);
-                foreach($value as $kk=>$vv) {
-                    $new[$kk] = $vv;
-                }
-                parent::_setItem($k, $new);
-            } else {
-                parent::_setItem($k, $value);
-            }
-        } else {
-            $new = parent::get('value', []);
-            foreach($value as $kk=>$vv) {
-                $new[$kk] = $vv;
-            }
-            parent::_setItem('value', $new);
-        }
+        if ($this->has($id))
+            parent::set($id, $value);
+        elseif ($this->has('value.' . $id)
+            parent::set('value.' . $id, $value);
     }
 
     function send() {

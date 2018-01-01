@@ -60,19 +60,19 @@ class Headers extends Collection
         return new static($data);
     }
 
+    # used by set($id, $value)
     public function setItem($id, $value=null)
     {
-        if (!is_array($value))
-            $value = [$value];
-            
         parent::setItem(strtolower($id), ['id' => $id, 'value'=>$value]);
     }
 
     public function add($id, $value)
     {
         $old = $this->get($id, []);
+        if (!is_array($old))
+            $old = [$old];
         $new = is_array($value) ? $value : [$value];
-        $this->set($key, array_merge($old, array_values($new)));
+        $this->set($id, array_merge($old, array_values($new)));
     }
 
     public function has($id)
@@ -83,6 +83,16 @@ class Headers extends Collection
     public function get($id, $default=null)
     {
         return $this->has($id) ? parent::get(strtolower($id))['value'] : $default;
+    }
+
+    public function getLine($id, $default='')
+    {
+        $values = $this->get($id, []);
+        if (!is_array($values))
+            $values = [$values];
+
+        $line = implode(', ', $values);
+        return ($line !== '') ? $line : $default;
     }
 
     public function remove($id)

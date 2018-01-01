@@ -5,40 +5,50 @@ namespace IrfanTOOR\Engine\Http;
 use InvalidArgumentException;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Engine\Http\Headers;
-use Psr\Http\Message\StreamInterface;
+use IrfanTOOR\Engine\Http\Stream;
+# use Psr\Http\Message\StreamInterface;
 
-class Message
+class Message extends Collection
 {
-    protected $version;
-    protected $headers;
-    protected $body;
-
-    public function __construct($version = '1.1', $headers = [], $body = null)
+    public function __construct($version = '1.1', $headers = null, $body = null)
     {
         $this->version = $version;
-        $this->headers = new Headers($headers);
-        $this->body = $body ? $body : new Stream(fopen('php://temp', 'rw+'));
+
+        if (!$headers)
+            $headers = [];
+
+        if (!($headers instanceof Headers)) {
+            if (!is_array($headers))
+                throw new InvalidArgumentException("Array or Header::class expeced as $headers", 1);
+
+            $headers = new Headers($headers);
+        }
+
+        if ($body === null || is_string($body)) {
+            $stream = new Stream(fopen('php://temp', 'w+'));
+            $stream->write($body);
+            $body = &$stream;
+        } elseif (!($body instanceof Stream)) {
+            throw new InvalidArgumentException("body can only be supplied as a stream or string", 1);
+        }
+
+        $this->set([
+            'version' => $version,
+            'headers' => $headers,
+            'body'    => $body,
+        ]);
     }
 
-    /**
-     * Disable magic setter to ensure immutability
-     */
-    public function __set($name, $value)
-    {
-        // Do nothing
+    public function __clone() {
+        $this->set('headers', clone $this->get('headers'));
+        $this->set('body', clone $this->get('body'));
     }
 
-    /**
-     * @importdoc
-     */
     public function getProtocolVersion()
     {
-        return $this->version;
+        return $this->get('version', '');
     }
 
-    /**
-     * @importdoc
-     */
     public function withProtocolVersion($version)
     {
         if ($version === $this->version)
@@ -60,12 +70,7 @@ class Message
      */
     public function getHeaders()
     {
-        // $headers = [];
-        // foreach($this->headers as $k=>$v) {
-        //     $headers[$v['id']] = $v['value'];
-        // }
-        // return $headers;
-        return $this->headers->toArray();
+        return $this->get('headers')->toArray();
     }
 
     /**
@@ -76,7 +81,7 @@ class Message
     public function hasHeader($name)
     {
         #return isset($this->headers[strtolower($name)]);
-        return $this->headers->has($name);
+        return $this->get('headers')->has($name);
     }
 
     /**
@@ -86,12 +91,7 @@ class Message
      */
     public function getHeader($name)
     {
-        // $sname = strtolower($name);
-        //
-        // return isset($this->headers[$sname])
-        //     ? $this->headers[$sname]['value']
-        //     : [];
-        return $this->headers->get($name, []);
+        return $this->get('headers')->get($name, []);
     }
 
     /**
@@ -112,7 +112,7 @@ class Message
     public function withHeader($name, $value)
     {
         $clone = clone $this;
-        $clone->headers->set($name, $value);
+        $clone->get('headers')->set($name, $value);
         return $clone;
     }
 
@@ -124,7 +124,7 @@ class Message
     public function withAddedHeader($name, $value)
     {
         $clone = clone $this;
-        $clone->headers->add($name, $value);
+        $clone->get('headers')->add($name, $value);
         return $clone;
     }
 
@@ -139,7 +139,7 @@ class Message
             return $this;
 
         $clone = clone $this;
-        $clone->headers->remove($name);
+        $clone->get('headers')->remove($name);
         return $clone;
     }
 
@@ -154,7 +154,7 @@ class Message
      */
     public function getBody()
     {
-        return $this->body;
+        return $this->get('body');
     }
 
     /**
@@ -172,16 +172,8 @@ class Message
      */
     public function withBody(StreamInterface $body)
     {
-        // TODO: Test for invalid body?
         $clone = clone $this;
-        $clone->body = $body;
-
+        $clone->set('body', $body);
         return $clone;
-    }
-
-    function __clone()
-    {
-        # Clones Headers after PHP clone call
-        $this->headers = new Headers($this->headers->toArray());
     }
 }
