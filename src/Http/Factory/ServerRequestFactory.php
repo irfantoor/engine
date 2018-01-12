@@ -22,9 +22,14 @@ class ServerRequestFactory implements ServerRequestFactoryInterface
         $uri
     ) : ServerRequestInterface
     {
-        return ($this->createServerRequestFromArray([]))
-                    ->withMethod($method)
-                    ->withUri(Factory::createUri($uri));
+        $server_request = $this->createServerRequestFromArray([]);
+        if ($method !== null)
+            $server_request = $server_request->withMethod($method);
+
+        if ($uri !== null)
+            $server_request = $server_request->withUri(Factory::createUri($uri));
+
+        return $server_request;
     }
 
     /**
@@ -41,6 +46,51 @@ class ServerRequestFactory implements ServerRequestFactoryInterface
         array $server
     ) : ServerRequestInterface
     {
+        $env = new Environment($server);
+
+        // Headers from environment
+        $data = [];
+        foreach($env as $k=>$v) {
+            $k = strtoupper($k);
+            if (strpos($k, 'HTTP_') === 0) {
+                $k = substr($k, 5);
+            } else {
+                if (!isset(static::$special[$k]))
+                    continue;
+            }
+
+            // normalize key
+            $k = str_replace(
+                ' ',
+                '-',
+                ucwords(strtolower(str_replace('_', ' ', $k)))
+            );
+
+            $data[$k] = $v;
+        }
+
+        return new Headers($data);
+
+        $sr = new ServerRequest();
+        $sr = $sr
+            ->withVersion(str_replace('HTTP/', '', $env['SERVER_PROTOCOL']))
+            ->withMethod($env['REQUEST_METHOD'])
+            ->withUri(Factory::createUriFromEnvironment($env))
+            ->withHeaders()
+
+        $this->server  = $env->toArray();
+        $this->cookies = $_COOKIE;
+        $this->query   = $_GET;
+        $this->files   = UploadedFile::createFromEnvironment($_FILES);
+        $this->post    = $_POST;
+
+        // create an array of attributes
+        $this->attributes = array_merge(
+            ($_FILES ?: []),
+            ($_GET ?: []),
+            ($_POST ?: []),
+            ($_COOKIE ?: [])
+        );
         return new ServerRequest($server);
     }
 }

@@ -6,7 +6,6 @@ use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Uri;
-use IrfanTOOR\Engine\Http\Validate;
 
 use PHPUnit\Framework\TestCase;
 
@@ -14,10 +13,10 @@ class ServerRequestTest extends TestCase
 {
     function getRequest($env=[])
     {
-        return Request::createFromEnvironment();
+        return Factory::createServerRequest();
     }
 
-    function testRequestInstance()
+    function testServerRequestInstance()
     {
         $request = $this->getRequest();
         $this->assertInstanceOf(

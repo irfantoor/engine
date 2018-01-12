@@ -1,15 +1,18 @@
 <?php
 
 use IrfanTOOR\Engine\Http\Uri;
+use IrfanTOOR\Engine\Http\Factory;
 use Psr\Http\Message\UriInterface;
+
 
 use PHPUnit\Framework\TestCase;
 
 class UriTest extends TestCase
 {
-    function getUri($url = null)
+    function getUri($url = '')
     {
-        return new Uri($url);
+        #return new Uri($url);
+        return Factory::createUri($url);
     }
 
     function testUriInstance()

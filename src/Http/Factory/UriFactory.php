@@ -24,4 +24,22 @@ class UriFactory implements UriFactoryInterface
     {
         return new Uri($uri);
     }
+
+    public function createUriFromEnvironment($env = [])
+    {
+        if (!($env instanceof Environment)) {
+            $env = new Environment($env);
+        }
+
+        $host = $env['HTTP_HOST'] ?: ($env['SERVER_NAME'] ?: 'localhost');
+        $protocol = $env['SERVER_PROTOCOL'] ?: 'HTTP/1.1';
+        $pos = strpos($protocol, '/');
+        $ver = substr($protocol, $pos + 1);
+        $url = ($env['REQUEST_SCHEME'] ?: 'http') .
+                '://' .
+                $host .
+                ($env['REQUEST_URI'] ?: '/');
+
+        return $this->createUri($url);
+    }
 }

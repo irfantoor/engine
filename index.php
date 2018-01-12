@@ -20,13 +20,14 @@ use IrfanTOOR\Engine\Http\Validate;
 
 define('HACKER_MODE', true);
 
-// $uri  = Factory::createUri(
-//     'http://irfan:test@www.example.com:8000/hello/world?hello=world#frag'
-// );
+$uri  = Factory::createUri(
+    'http://irfan:test@www.example.com:8000/hello/world?hello=world#frag'
+);
 
-$f = Factory::createUploadedFile('/tmp/hello.txt');
+$sr = Factory::createServerRequest();
+# $f = Factory::createUploadedFile('/tmp/hello.txt');
 
-print_r($f);
+print_r($sr);
 
 exit;
 

@@ -112,8 +112,8 @@ class Factory
      * @return ServerRequestInterface
      */
     public function createServerRequest(
-        $method,
-        $uri
+        $method = null,
+        $uri    = null
     ) : ServerRequestInterface
     {
         if (self::$server_request_factory === null) {

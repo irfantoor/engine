@@ -39,7 +39,7 @@ class UploadedFileFactory implements UploadedFileFactoryInterface
         $clientMediaType = null
     ) : UploadedFileInterface
     {
-        return new UploadedFile([
+        return new UploadedFile(
             'name' => $file,
             'size' => $size,
             'error' => $error,

@@ -6,6 +6,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 use IrfanTOOR\Exception;
 use IrfanTOOR\Engine\Http\Environment;
+use IrfanTOOR\Engine\Http\Factory;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Uri;
 use IrfanTOOR\Engine\Http\UploadedFile;
@@ -56,27 +57,28 @@ class ServerRequest extends Request implements ServerRequestInterface
     protected $files;
     protected $post;
 
-    function __construct($mock = [])
+    function __construct()
     {
-        $env = new Environment($mock);
-
-        $this->version = str_replace('HTTP/', '', $env['SERVER_PROTOCOL']);
-        $this->method  = $env['REQUEST_METHOD'];
-        $this->uri     = Uri::createFromEnvironment($env);
-        $this->headers = Headers::createFromEnvironment($env);
-        $this->server  = $env->toArray();
-        $this->cookies = $_COOKIE;
-        $this->query   = $_GET;
-        $this->files   = UploadedFile::createFromEnvironment($_FILES);
-        $this->post    = $_POST;
-
-        // create an array of attributes
-        $this->attributes = array_merge(
-            ($_FILES ?: []),
-            ($_GET ?: []),
-            ($_POST ?: []),
-            ($_COOKIE ?: [])
-        );
+        parent::__construct();
+        // $env = new Environment($mock);
+        //
+        // $this->version = str_replace('HTTP/', '', $env['SERVER_PROTOCOL']);
+        // $this->method  = $env['REQUEST_METHOD'];
+        // $this->uri     = Factory::createUri::createFromEnvironment($env);
+        // $this->headers = Headers::createFromEnvironment($env);
+        // $this->server  = $env->toArray();
+        // $this->cookies = $_COOKIE;
+        // $this->query   = $_GET;
+        // $this->files   = UploadedFile::createFromEnvironment($_FILES);
+        // $this->post    = $_POST;
+        //
+        // // create an array of attributes
+        // $this->attributes = array_merge(
+        //     ($_FILES ?: []),
+        //     ($_GET ?: []),
+        //     ($_POST ?: []),
+        //     ($_COOKIE ?: [])
+        // );
     }
 
     function validate($name, $value)

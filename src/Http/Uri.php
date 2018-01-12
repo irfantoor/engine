@@ -56,24 +56,6 @@ Class Uri implements UriInterface
     protected $authority = '';
     protected $basepath = '';
 
-    static function createFromEnvironment($env = [])
-    {
-        if (!($env instanceof Environment)) {
-            $env = new Environment($env);
-        }
-
-        $host = $env['HTTP_HOST'] ?: ($env['SERVER_NAME'] ?: 'localhost');
-        $protocol = $env['SERVER_PROTOCOL'] ?: 'HTTP/1.1';
-        $pos = strpos($protocol, '/');
-        $ver = substr($protocol, $pos + 1);
-        $url = ($env['REQUEST_SCHEME'] ?: 'http') .
-                '://' .
-                $host .
-                ($env['REQUEST_URI'] ?: '/');
-
-        return new static ($url);
-    }
-
     public function __construct($url = null)
     {
         if ($url) {
@@ -141,8 +123,7 @@ Class Uri implements UriInterface
                         'Uri fragment must be a string'
                     );
                 }
-                $fragment = ltrim((string)$fragment, '#');
-                return $frqgemnt;
+                return ltrim($fragment, '#');
 
             case 'user':
             case 'pass':

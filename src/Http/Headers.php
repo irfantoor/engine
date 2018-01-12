@@ -22,37 +22,6 @@ class Headers extends Collection
         'AUTH_TYPE' => 1,
     ];
 
-    /**
-     * Create new headers collection from the environment
-     *
-     */
-    public static function createFromEnvironment($env = [])
-    {
-        if (!($env instanceof Environment)) {
-            if (!is_array($env))
-                throw new Exception('passed env can either be an array or an
-                                        instance of Environment');
-
-            $env = new Environment($env);
-        }
-
-        $data = [];
-        foreach($env as $k=>$v) {
-            $k = strtoupper($k);
-            if (strpos($k, 'HTTP_') === 0)
-                $k = substr($k, 5);
-            elseif (!isset(static::$special[$k]))
-                continue;
-
-            // normalize key
-            $k = str_replace(' ', '-',
-                ucwords(strtolower(str_replace("_", " ", $k))));
-            $data[$k] = $v;
-        }
-
-        return new static($data);
-    }
-
     function __construct($init = [])
 	{
         parent::__construct($init);
