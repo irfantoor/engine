@@ -1,20 +1,17 @@
 <?php
-/**
- * IrfanTOOR\Smart
- *
- * @author    Irfan TOOR <email@irfantoor.com>
- * @copyright 2017 Irfan TOOR
- * @license   https://github.com/irfantoor/engine/blob/master/LICENSE (MIT License)
- */
 
 namespace IrfanTOOR\Engine\Http;
 
+use IrfanTOOR\Exception;
 use IrfanTOOR\Collection;
 
 class Environment extends Collection
 {
     function __construct($mock = [])
     {
+        if (!is_array($mock))
+            throw new Exception('mocked environment data must be an array');
+
         # todo --
         # if (!isset($_SESSION))
         #     session_start();

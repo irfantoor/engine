@@ -1,67 +1,87 @@
 <?php
 
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamIterface;
 use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Environment;
+use IrfanTOOR\Engine\Http\Factory;
+use IrfanTOOR\Engine\Http\Factory\ResponseFactory;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Response;
+use IrfanTOOR\Engine\Http\Stream;
 use IrfanTOOR\Engine\Http\ResponseStatus;
-use IrfanTOOR\Engine\Http\Uri;
 
 use PHPUnit\Framework\TestCase;
 
 class ResponseTest extends TestCase
 {
-    function getResponse($status=200, $headers=[], $body='')
-    {
+    function getResponse(
+        $status  = Response::STATUS_OK,
+        $headers = null,
+        $body    = null
+    ){
+        $response = IrfanTOOR\Engine\Http\Factory::createResponse();
         return new Response($status, $headers, $body);
     }
 
     function testResponseInstance()
     {
-        $res = $this->getResponse();
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $res);
-        $this->assertInstanceOf(IrfanTOOR\Collection::class, $res);
+        $response = $this->getResponse();
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $response);
+        $this->assertInstanceOf(Psr\Http\Message\ResponseInterface::class, $response);
     }
 
-    function testResponseStatus()
+    function testDefaultResponseStatus()
     {
-        $res = $this->getResponse();
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\ResponseStatus::class, $res['status']);
+        $response = $this->getResponse();
+        $this->assertEquals(Response::STATUS_OK, $response->getStatusCode());
     }
 
     function testHeaders()
     {
-        $res = $this->getResponse();
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Headers::class, $res['headers']);
-        $res = $res->with('header', ['alfa' => 'beta']);
-        $this->assertEquals([], $res->get('headers')->toArray());
+        $response = $this->getResponse();
+        $this->assertTrue(is_array($response->getHeaders()));
+        $response = $response->withHeader('alfa', 'beta');
+        $this->assertEquals(['alfa' => ['beta']], $response->getHeaders());
     }
 
     function testBody()
     {
-        $res = $this->getResponse();
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Stream::class, $res['body']);
+        $response = $this->getResponse();
+        $this->assertInstanceOf(
+            Psr\Http\Message\StreamInterface::class,
+            $response->getBody()
+        );
     }
 
     function testDefaults()
     {
-        $res = $this->getResponse();
+        $response = $this->getResponse();
 
-        $this->assertEquals(ResponseStatus::STATUS_OK, $res['status']->__toString());
-        $this->assertEquals('', $res['body']->__toString());
-        $this->assertEquals(null, $res['cookie']);
+        $this->assertEquals(Response::STATUS_OK, $response->getStatusCode());
+        $this->assertInstanceOf(
+            Psr\Http\Message\StreamInterface::class,
+            $response->getBody()
+        );
     }
 
     function testParameterInitialization()
     {
-        $res = New Response(ResponseStatus::STATUS_NOT_FOUND, [], 'Not Found');
+        $response = Response::create(
+            [
+                'code' => Response::STATUS_NOT_FOUND,
+                'body' => 'Hello World!',
+            ]
+        );
 
-        $this->assertEquals(ResponseStatus::STATUS_NOT_FOUND, $res['status']->__toString());
-        $this->assertEquals('Not Found', $res['body']->__toString());
-    }
+        $this->assertEquals(
+            Response::STATUS_NOT_FOUND,
+            $response->getStatusCode()
+        );
 
-    function testCookie()
-    {
-        $this->assertEquals('', 'todo -- Cookie needs to be implemented');
+        $this->assertEquals(
+            'Hello World!',
+            (string) $response->getBody()
+        );
     }
 }

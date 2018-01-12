@@ -2,30 +2,50 @@
 
 namespace IrfanTOOR\Engine\Http;
 
+use RuntimeException;
+use InvalidArgumentException;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
+use IranTOOR\Engine\Http\Stream;
 
-class UploadedFile extends Collection implements UploadedFileInterface
+/**
+ * Value object representing a file uploaded through an HTTP request.
+ *
+ * Instances of this interface are considered immutable; all methods that
+ * might change state MUST be implemented such that they retain the internal
+ * state of the current instance and return an instance that contains the
+ * changed state.
+ */
+class UploadedFile implements UploadedFileInterface
 {
-    public static function createFromEnvironment($env = null)
+
+    protected $file;
+    protected $name;
+    protected $type;
+    protected $size;
+
+    protected $error;
+    protected $stream;
+    protected $moved;
+
+    /**
+     * Construct a new UploadedFile instance.
+     *
+     * @param string      $file The full path to the uploaded file provided by the client.
+     * @param string|null $name The file name.
+     * @param string|null $type The file media type.
+     * @param int|null    $size The file size in bytes.
+     * @param int         $error The UPLOAD_ERR_XXX code representing the status of the upload.
+     * @param bool        $sapi Indicates if the upload is in a SAPI environment.
+     */
+    public function __construct($file, $name = null, $type = null, $size = null, $error = UPLOAD_ERR_OK, $sapi = false)
     {
-        if (!$env || is_array($env))
-            $env = new Environment($env);
-
-        if (!$env instanceof Environment)
-            $env = new Environment();
-
-        return new static($env['files']);
-    }
-
-    public function __construct($files)
-    {
-        $this->set('files', $files);
-        $this->process();
-    }
-
-    public function process()
-    {
-        $this->set('stream', new Stream());
+        $this->file = $file;
+        $this->name = $name;
+        $this->type = $type;
+        $this->size = $size;
+        $this->error = $error;
+        $this->sapi = $sapi;
     }
 
     /**
@@ -46,7 +66,14 @@ class UploadedFile extends Collection implements UploadedFileInterface
      */
     public function getStream()
     {
-        return $this->get('stream');
+        if ($this->moved) {
+            throw new \RuntimeException(sprintf('Uploaded file %1s has already been moved', $this->name));
+        }
+        if ($this->stream === null) {
+            $this->stream = new Stream(fopen($this->file, 'r'));
+        }
+
+        return $this->stream;
     }
 
     /**
@@ -81,18 +108,54 @@ class UploadedFile extends Collection implements UploadedFileInterface
      * @throws \RuntimeException on any error during the move operation, or on
      *     the second or subsequent call to the method.
      */
-    public function moveTo($targetPath);
+    public function moveTo($targetPath)
+    {
+        if ($this->moved) {
+            throw new RuntimeException('Uploaded file already moved');
+        }
 
-    /**
-     * Retrieve the file size.
-     *
-     * Implementations SHOULD return the value stored in the "size" key of
-     * the file in the $_FILES array if available, as PHP calculates this based
-     * on the actual size transmitted.
-     *
-     * @return int|null The file size in bytes or null if unknown.
-     */
-    public function getSize();
+        $targetIsStream = strpos($targetPath, '://') > 0;
+        if (!$targetIsStream && !is_writable(dirname($targetPath))) {
+            throw new InvalidArgumentException('Upload target path is not writable');
+        }
+
+        if ($targetIsStream) {
+            if (!copy($this->file, $targetPath)) {
+                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
+            }
+            if (!unlink($this->file)) {
+                throw new RuntimeException(sprintf('Error removing uploaded file %1s', $this->name));
+            }
+        } elseif ($this->sapi) {
+            if (!is_uploaded_file($this->file)) {
+                throw new RuntimeException(sprintf('%1s is not a valid uploaded file', $this->file));
+            }
+
+            if (!move_uploaded_file($this->file, $targetPath)) {
+                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
+            }
+        } else {
+            if (!rename($this->file, $targetPath)) {
+                throw new RuntimeException(sprintf('Error moving uploaded file %1s to %2s', $this->name, $targetPath));
+            }
+        }
+
+        $this->moved = true;
+    }
+
+     /**
+      * Retrieve the file size.
+      *
+      * Implementations SHOULD return the value stored in the "size" key of
+      * the file in the $_FILES array if available, as PHP calculates this based
+      * on the actual size transmitted.
+      *
+      * @return int|null The file size in bytes or null if unknown.
+      */
+     public function getSize()
+     {
+         return $this->size;
+     }
 
     /**
      * Retrieve the error associated with the uploaded file.
@@ -108,7 +171,10 @@ class UploadedFile extends Collection implements UploadedFileInterface
      * @see http://php.net/manual/en/features.file-upload.errors.php
      * @return int One of PHP's UPLOAD_ERR_XXX constants.
      */
-    public function getError();
+    public function getError()
+    {
+        return $this->error;
+    }
 
     /**
      * Retrieve the filename sent by the client.
@@ -123,7 +189,10 @@ class UploadedFile extends Collection implements UploadedFileInterface
      * @return string|null The filename sent by the client or null if none
      *     was provided.
      */
-    public function getClientFilename();
+    public function getClientFilename()
+    {
+        return $this->name;
+    }
 
     /**
      * Retrieve the media type sent by the client.
@@ -138,5 +207,8 @@ class UploadedFile extends Collection implements UploadedFileInterface
      * @return string|null The media type sent by the client or null if none
      *     was provided.
      */
-    public function getClientMediaType();
+    public function getClientMediaType()
+    {
+        return $this->type;
+    }
 }

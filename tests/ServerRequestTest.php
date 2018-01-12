@@ -1,0 +1,30 @@
+<?php
+
+use IrfanTOOR\Engine\Http\Environment;
+use IrfanTOOR\Engine\Http\Factory;
+use IrfanTOOR\Engine\Http\Headers;
+use IrfanTOOR\Engine\Http\Request;
+use IrfanTOOR\Engine\Http\ServerRequest;
+use IrfanTOOR\Engine\Http\Uri;
+use IrfanTOOR\Engine\Http\Validate;
+
+use PHPUnit\Framework\TestCase;
+
+class ServerRequestTest extends TestCase
+{
+    function getRequest($env=[])
+    {
+        return Request::createFromEnvironment();
+    }
+
+    function testRequestInstance()
+    {
+        $request = $this->getRequest();
+        $this->assertInstanceOf(
+            IrfanTOOR\Engine\Http\ServerRequest::class,
+            $request
+        );
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Request::class, $request);
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Message::class, $request);
+    }
+}

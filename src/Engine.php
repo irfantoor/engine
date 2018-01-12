@@ -5,17 +5,18 @@ namespace IrfanTOOR;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
 use IrfanTOOR\Engine\Debug;
-use IrfanTOOR\Engine\Http\Cookies;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\Response;
 use IrfanTOOR\Engine\Http\ResponseStatus;
 use IrfanTOOR\Engine\Http\Uri;
-use IrfanTOOR\Engine\Middleware;
 use IrfanTOOR\Engine\Router;
 
-class Engine
+class Engine extends Collection
 {
+
+    use Engine\MiddlewareTrait;
+
     # use MiddlewareAwareTrait;
 
     /**
@@ -40,8 +41,6 @@ class Engine
      * @var Collection
      */
     protected $config;
-
-    protected $data;
 
     /**
      * Container
@@ -87,23 +86,23 @@ class Engine
         };
     }
 
-    static function instance()
+    public static function instance()
     {
         return static::$instance;
     }
 
-    function config($id, $default = null)
+    public function config($id, $default = null)
     {
         return $this->config->get($id, $default);
     }
 
-    function data()
-    {
-        return $this->data;
-    }
-
     function container() {
         return $this->container;
+    }
+
+    public function add($callable)
+    {
+        return $this->addMiddleware($callable);
     }
 
     /**
@@ -128,39 +127,70 @@ class Engine
 
     function addRoute($method, $path, $handler)
     {
-        $r = $this->container->get('router');
-        $r->addRoute($method, $path, $handler);
+        $router = $this->container['router'];
+        $router->addRoute($method, $path, $handler);
     }
 
     function finalize(Response $response)
     {
-        extract($response->toArray());
-
-        $size = mb_strlen($body);
-        if ($size !== null && !$headers->has('Content-Length')) {
-            # $headers->set('Content-Length', (string) $size);
-            $response = $response->with('headers', $headers);
+        # extract($response->toArray());
+        $stream = $response->getBody();
+        $size = $stream->getSize();
+        if ($size !== null && !$response->hasHeader('Content-Length')) {
+            $response = $response->withHeader('Content-Length', $size);
         }
 
         return $response;
     }
 
-    function run()
+    function run($request = null, $response = null)
     {
-        $request  = $this->container['request'];
-        $response = $this->container['response'];
-        $router   = $this->container['router'];
+        $container = $this->container();
 
-        $uri      = $request['uri'];
-        $path     = $uri['base_path'];
+        # todo later in a separate file
+        $container['router']      = function() {
+            return new Router();
+        };
 
-        if ($path === '/')
+        $container['environment'] = function() {
+            return new Environment();
+        };
+
+        $container['uri']         = function() {
+            $container = Engine::instance()->container();
+            return Uri::createFromEnvironment($container['environment']);
+        };
+
+        // $container['cookies']     = function() {
+        //     return new Cookies($_COOKIE);
+        // };
+        //
+        $container['request']     = function() {
+            return Request::createFromEnvironment();
+        };
+
+        $container['response']    = function() {
+            return new Response();
+        };
+
+
+
+        $router = $container['router'];
+        $uri    = $request->getUri();
+        $path   = $uri->getPath();
+        $path   = rtrim(ltrim($path)) . '/';
+
+        if ($path === '/') {
             $args = [];
-        else
+        } else {
             $args = explode('/', htmlspecialchars($path));
+        }
 
-        $route    = $router->process($request['method'], $path);
-        extract($route);
+        // extract processed route
+        extract(
+            $router->process($request->getMethod(), $path)
+        );
+
 
         switch ($type) {
             case 'closure':
@@ -180,15 +210,38 @@ class Engine
                 if (!method_exists($class, $method))
                     $method  = 'defaultMethod';
 
-                $response = $class->$method($request, $response, $args);
+                $next = $this;
+                $this->addMiddleware(function($request, $response, $next) use($class, $method, $args){
+                    $result = $next($request, $response);
+                    $response = $class->$method($request, $result[1], $args);
+                    return $response;
+                });
+
+                # $response = $class->$method($request, $response, $args);
                 break;
 
             default:
+                $stream = $response->getBody();
+                $stream->write('no route defined!');
                 $response = $response
-                    ->with('status', ResponseStatus::STATUS_NOT_FOUND)
-                    ->with('body', 'no route defined!');
+                    ->withStatus(Response::STATUS_NOT_FOUND)
+                    ->withBody($stream);
         }
 
-        $this->finalize($response)->send();
+        $result = $this->callMiddlewares(
+            ($request !== null)  ? $request : $this->container['request'],
+            ($response !== null) ? $response : $this->container['response']
+        );
+
+        $this->finalize($result[1])->send();
+    }
+
+    /**
+     * Invoke application
+     *
+     */
+    public function __invoke(Request $request, Response $response)
+    {
+        return [$request, $response];
     }
 }

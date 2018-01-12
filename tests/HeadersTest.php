@@ -25,10 +25,10 @@ class HeadersTest extends TestCase
         $h = $this->getHeaders();
 
         $this->assertTrue($h->has('content-length'));
-        $this->assertEquals(100, $h->get('contenT-Length'));
+        $this->assertEquals([100], $h->get('contenT-Length'));
 
         $this->assertTrue($h->has('CONTENT-TYPE'));
-        $this->assertEquals('text/html', $h->get('CONTENT-type'));
+        $this->assertEquals(['text/html'], $h->get('CONTENT-type'));
     }
 
     function testRetainsLastSetKey()
@@ -40,15 +40,14 @@ class HeadersTest extends TestCase
         ];
 
         $expected = [
-            'Content-Length' => 100,
-            'Content-Type'   => 'text/html',
-            'GO'             => 'Google',
+            'Content-Length' => [100],
+            'Content-Type'   => ['text/html'],
+            'GO'             => ['Google'],
         ];
 
         $h = new Headers($init);
 
         $this->assertEquals('google', $h->getLine('Go'));
-        $this->assertEquals($init, $h->toArray());
 
         # Set the key value pair, which is accessible
         $h->set('GO', 'Google');

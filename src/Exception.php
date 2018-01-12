@@ -2,14 +2,9 @@
 
 namespace IrfanTOOR\Engine;
 
-use Exception as PhpException;
-/**
- * Exception
- */
-class Exception extends PhpException
+use Exception as PHPException;
+
+class Exception extends PHPException
 {
-    function __construct($args)
-    {
-        parent::__construct($args);
-    }
+
 }

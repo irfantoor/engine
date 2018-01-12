@@ -1,15 +1,9 @@
 <?php
-/**
- * IrfanTOOR\Smart
- *
- * @author    Irfan TOOR <email@irfantoor.com>
- * @copyright 2017 Irfan TOOR
- * @license   https://github.com/irfantoor/collection/blob/master/LICENSE (MIT License)
- */
 
 namespace IrfanTOOR\Engine\Http;
 
 use IrfanTOOR\Collection;
+use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Environment;
 
 class Headers extends Collection
@@ -28,23 +22,20 @@ class Headers extends Collection
         'AUTH_TYPE' => 1,
     ];
 
-    function __construct($init = [])
-	{
-        parent::__construct($init);
-	}
-
     /**
      * Create new headers collection from the environment
      *
-     * @param Environment $environment The Smart Environment
-     *
-     * @return self
      */
     public static function createFromEnvironment($env = [])
     {
         if (!($env instanceof Environment)) {
+            if (!is_array($env))
+                throw new Exception('passed env can either be an array or an
+                                        instance of Environment');
+
             $env = new Environment($env);
         }
+
         $data = [];
         foreach($env as $k=>$v) {
             $k = strtoupper($k);
@@ -53,24 +44,35 @@ class Headers extends Collection
             elseif (!isset(static::$special[$k]))
                 continue;
 
-            $k = str_replace(" ", "-", ucwords(strtolower(str_replace("_", " ", $k))));
+            // normalize key
+            $k = str_replace(' ', '-',
+                ucwords(strtolower(str_replace("_", " ", $k))));
             $data[$k] = $v;
         }
 
         return new static($data);
     }
 
+    function __construct($init = [])
+	{
+        parent::__construct($init);
+	}
+
     # used by set($id, $value)
-    public function setItem($id, $value=null)
+    public function setItem($id, $value = null)
     {
-        parent::setItem(strtolower($id), ['id' => $id, 'value'=>$value]);
+        if (!is_array($value))
+            $value = [$value];
+
+        parent::setItem(strtolower($id), ['id' => $id, 'value' => $value]);
     }
 
     public function add($id, $value)
     {
-        $old = $this->get($id, []);
+        $old = $this->get($id);
         if (!is_array($old))
             $old = [$old];
+
         $new = is_array($value) ? $value : [$value];
         $this->set($id, array_merge($old, array_values($new)));
     }
@@ -80,19 +82,16 @@ class Headers extends Collection
         return parent::has(strtolower($id));
     }
 
-    public function get($id, $default=null)
+    public function get($id, $default = [])
     {
         return $this->has($id) ? parent::get(strtolower($id))['value'] : $default;
     }
 
-    public function getLine($id, $default='')
+    public function getLine($id, $default = '')
     {
         $values = $this->get($id, []);
-        if (!is_array($values))
-            $values = [$values];
-
         $line = implode(', ', $values);
-        return ($line !== '') ? $line : $default;
+        return ('' !== $line) ? $line : $default;
     }
 
     public function remove($id)

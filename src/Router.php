@@ -5,13 +5,14 @@ namespace IrfanTOOR\Engine;
 use InvalidArgumentException;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Exception;
-use IrfanTOOR\Engine\Http\RequestMethod;
+use IrfanTOOR\Engine\Http\Request;
 
 /**
  * Router
  */
 class Router extends Collection
 {
+    protected $strict_mode = false;
     protected static $methods = [
         'HEAD',
         'GET',
@@ -33,8 +34,13 @@ class Router extends Collection
 
     public function setAllowedMethods($methods = null)
     {
-        if (!$methods)
+
+        if (!$methods) {
+            $this->strict_mode = false;
             $methods = self::$methods;
+        } else {
+            $this->strict_mode = true;
+        }
 
         if (is_string($methods))
             $methods = [$methods];
@@ -64,12 +70,13 @@ class Router extends Collection
                         $this->addRoute($am, $patern, $handler);
                 }
             } else {
-                $method = RequestMethod::validate($method);
-                if (!$this->has($method)) {
-                        throw new InvalidArgumentException('Not an allowed method: ' . $method);
-                }
+                # todo -- find some sane way of calling
+                $method = Request::validate('method', $method);
 
-                $def = $this->get($method, []);
+                $def = $this->get($method);
+                if (!is_array($def) && $this->strict_mode)
+                    throw new InvalidArgumentException('Not an allowed method: ' . $method);
+
                 $def[] = [
                     'patern'  => $patern,
                     'handler' => $handler,
@@ -81,15 +88,8 @@ class Router extends Collection
 
     public function process($method, $path='/')
     {
-        if (!is_string($method) && !method_exists($method, '__toString')) {
-            throw new InvalidArgumentException('method must be a string');
-        }
-
-        $method = strtoupper($method);
-
-        if (!in_array($method, self::$methods)) {
-            throw new InvalidArgumentException('Unknown method: ' . $method);
-        }
+        # todo -- use a sane way to call
+        $method = Request::validate('method', $method);
 
         $path = ltrim(rtrim($path, '/'), '/') ?: '/';
         $found = false;

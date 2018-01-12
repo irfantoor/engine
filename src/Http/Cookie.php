@@ -52,7 +52,7 @@ class Cookie extends Collection
     }
 
     # used by set
-    public function _setItem($id, $value)
+    public function setItem($id, $value)
     {
         if ($this->has($id))
             parent::set($id, $value);
