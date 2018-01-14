@@ -8,27 +8,73 @@ use IrfanTOOR\Engine\Debug;
 use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Middleware;
 use IrfanTOOR\Engine\Router;
+use IrfanTOOR\Engine\Http\Cookie;
 use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Factory;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\Response;
 use IrfanTOOR\Engine\Http\ServerRequest;
+use IrfanTOOR\Engine\Http\Stream;
+use IrfanTOOR\Engine\Http\UploadedFile;
 use IrfanTOOR\Engine\Http\Uri;
-use IrfanTOOR\Engine\Http\Validate;
+
 
 define('HACKER_MODE', true);
 
-$uri  = Factory::createUri(
-    'http://irfan:test@www.example.com:8000/hello/world?hello=world#frag'
-);
+// $uri  = Factory::createUri(
+//     'http://irfan:test@www.example.com:8000/hello/world?hello=world#frag'
+// );
+//
+// $sr = Factory::createServerRequest();
+// # $f = Factory::createUploadedFile('/tmp/hello.txt');
+//
+// print_r($sr);
+//
 
-$sr = Factory::createServerRequest();
-# $f = Factory::createUploadedFile('/tmp/hello.txt');
+// $sr = (new ServerRequest())->withHeader('User-Agent', 'Hello World v1.0');
 
-print_r($sr);
+// $c = new Cookie(['hello' => 'world!']);
+// $c = $c->withValue(['hello' => 'AnotherWorld!'])->withOptions([
+//     'domain'   => 'example.com',
+//     'httponly' => 1
+// ]);
+#$_SESSION['hello'] = 'world!';
 
+// $cookies = $sr->getCookieParams();
+// foreach($cookies as $cookie)
+// {
+//     $value = $cookie->getValue();
+//     foreach($value as $k=>$v) {
+//         if ($k === 'PHPSESSID') {
+//             #$c = $cookie->withValue(['PHPSESSID' => '3c23a877cdd7db97d959ce9bd6ad2737']);
+//             $c = $cookie->withOptions(['expires' => 1]);
+//             $c->send();
+//         }
+//     }
+// }
+//
+// Debug::dump($sr);
+
+// $s = Stream::createFromString('');
+//
+// $s->write('Hello');
+// $s->write(' ');
+// $s->write('World!');
+// $s->seek(0);
+// print_r($s->write('Shello'));
+// print_r((string) $s);
+
+$ie = new Engine([
+    'debug' => [
+        'level' => 1,
+    ]
+]);
+
+
+
+
+$ie->run();
 exit;
 
 

@@ -6,7 +6,7 @@ use RuntimeException;
 use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UploadedFileInterface;
-use IranTOOR\Engine\Http\Stream;
+use IrfanTOOR\Engine\Http\Stream;
 
 /**
  * Value object representing a file uploaded through an HTTP request.
@@ -27,6 +27,48 @@ class UploadedFile implements UploadedFileInterface
     protected $error;
     protected $stream;
     protected $moved;
+
+    public static function createFromArray(array $files)
+    {
+        return self::_parse($files);
+    }
+
+    private static function _parse(array $files)
+    {
+        $uploaded = [];
+        foreach ($files as $id => $file) {
+            if (!isset($file['error'])) {
+                continue;
+            }
+
+            $uploaded[$id] = [];
+            if (!is_array($file['error'])) {
+                $uploaded[$id] = new static(
+                    $file['tmp_name'],
+                    isset($file['name']) ? $file['name'] : null,
+                    isset($file['type']) ? $file['type'] : null,
+                    isset($file['size']) ? $file['size'] : null,
+                    $file['error'],
+                    true
+                );
+            } else {
+                $subArray = [];
+                foreach ($file['error'] as $fileIdx => $error) {
+                    // normalise subarray and re-parse to move the input's keyname up a level
+                    $subArray[$fileIdx]['name'] = $file['name'][$fileIdx];
+                    $subArray[$fileIdx]['type'] = $file['type'][$fileIdx];
+                    $subArray[$fileIdx]['tmp_name'] = $file['tmp_name'][$fileIdx];
+                    $subArray[$fileIdx]['error'] = $file['error'][$fileIdx];
+                    $subArray[$fileIdx]['size'] = $file['size'][$fileIdx];
+
+                    $uploaded[$id] = static::_parse($subArray);
+                }
+            }
+        }
+
+        return $uploaded;
+    }
+
 
     /**
      * Construct a new UploadedFile instance.
@@ -70,7 +112,7 @@ class UploadedFile implements UploadedFileInterface
             throw new \RuntimeException(sprintf('Uploaded file %1s has already been moved', $this->name));
         }
         if ($this->stream === null) {
-            $this->stream = new Stream(fopen($this->file, 'r'));
+            $this->stream = Stream::createFromFile($this->file);
         }
 
         return $this->stream;

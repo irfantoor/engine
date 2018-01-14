@@ -6,48 +6,23 @@ use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
 use IrfanTOOR\Engine\Debug;
 use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Request;
+use IrfanTOOR\Engine\Http\Factory;
+use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Response;
-use IrfanTOOR\Engine\Http\ResponseStatus;
 use IrfanTOOR\Engine\Http\Uri;
+use IrfanTOOR\Engine\Http\Stream;
+use IrfanTOOR\Engine\MiddlewareTrait;
 use IrfanTOOR\Engine\Router;
 
 class Engine extends Collection
 {
-
     use Engine\MiddlewareTrait;
 
-    # use MiddlewareAwareTrait;
-
-    /**
-     * Singleton instance
-     *
-     * @var string
-     */
-    protected static
-        $instance;
-
-    /**
-     * Current version
-     *
-     * @var string
-     */
     const VERSION = '1.0';
 
-
-    /**
-     * Configuration
-     *
-     * @var Collection
-     */
+    protected static $instance;
     protected $config;
-
-    /**
-     * Container
-     *
-     * @var Container
-     */
-    private $container;
+    protected $container;
 
     function __construct($config=[])
     {
@@ -57,33 +32,7 @@ class Engine extends Collection
         Debug::enable($this->config('debug.level', 0));
         $this->data = $this->config('data', []);
 
-        $c = $this->container = new Container();
-
-        # todo later in a separate file
-        $c['router']      = function() {
-            return new Router();
-        };
-
-        $c['environment'] = function() {
-            return new Environment();
-        };
-
-        $c['uri']         = function() {
-            $c = Engine::instance()->container();
-            return Uri::createFromEnvironment($c['environment']);
-        };
-
-        $c['cookies']     = function() {
-            return new Cookies($_COOKIE);
-        };
-
-        $c['request']     = function() {
-            return Request::createFromEnvironment();
-        };
-
-        $c['response']    = function() {
-            return new Response();
-        };
+        $this->container = new Container();
     }
 
     public static function instance()
@@ -134,63 +83,80 @@ class Engine extends Collection
     function finalize(Response $response)
     {
         # extract($response->toArray());
-        $stream = $response->getBody();
-        $size = $stream->getSize();
-        if ($size !== null && !$response->hasHeader('Content-Length')) {
-            $response = $response->withHeader('Content-Length', $size);
-        }
+        // $stream = $response->getBody();
+        // $size = $stream->getSize();
+        // if ($size !== null && !$response->hasHeader('Content-Length')) {
+        //     $response = $response->withHeader('Content-Length', $size);
+        // }
 
         return $response;
     }
 
-    function run($request = null, $response = null)
+    function run()
     {
         $container = $this->container();
 
         # todo later in a separate file
-        $container['router']      = function() {
-            return new Router();
-        };
-
-        $container['environment'] = function() {
-            return new Environment();
-        };
-
-        $container['uri']         = function() {
-            $container = Engine::instance()->container();
-            return Uri::createFromEnvironment($container['environment']);
-        };
-
-        // $container['cookies']     = function() {
-        //     return new Cookies($_COOKIE);
-        // };
-        //
-        $container['request']     = function() {
-            return Request::createFromEnvironment();
-        };
-
-        $container['response']    = function() {
-            return new Response();
-        };
-
-
-
-        $router = $container['router'];
-        $uri    = $request->getUri();
-        $path   = $uri->getPath();
-        $path   = rtrim(ltrim($path)) . '/';
-
-        if ($path === '/') {
-            $args = [];
-        } else {
-            $args = explode('/', htmlspecialchars($path));
+        if (!isset($container['router'])) {
+            $container['router'] = function() {
+                return new Router();
+            };
         }
+
+        if (!isset($container['environment'])) {
+            $container['environment'] = function() {
+                return new Environment();
+            };
+        }
+
+        if (!isset($container['uri'])) {
+            $container['uri'] = function() {
+                #$c = Engine::instance()->container();
+                $container = $this->container();
+                return Uri::createFromEnvironment($container['environment']);
+            };
+        }
+
+        if (!isset($container['request'])) {
+            $container->factory('request', function() {
+                #$c = Engine::instance()->container();
+                $container = $this->container();
+                return new Request($container['environment']);
+            });
+        }
+
+        if (!isset($container['serverrequest'])) {
+            $container->set('serverrequest', function() {
+                return new ServerRequest();
+            });
+        }
+
+        if (!isset($container['request'])) {
+            $container['request'] = function() {
+                #$c = Engine::instance()->container();
+                $container = $this->container();
+                return new ServerRequest($container['environment']);
+            };
+        }
+
+        if (!isset($container['response'])) {
+            $container['response'] = function() {
+                return new Response();
+            };
+        }
+
+        $request  = $container['serverrequest'];
+        $response = $container['response'];
+        $router   = $container['router'];
+        $uri      = $request->getUri();
+        $path     = $uri->getPath();
+        $basepath = rtrim(ltrim($path, '/'), '/');
+        $args     = explode('/', htmlspecialchars($basepath));
 
         // extract processed route
         extract(
             $router->process($request->getMethod(), $path)
         );
-
 
         switch ($type) {
             case 'closure':
@@ -224,8 +190,7 @@ class Engine extends Collection
                 $stream = $response->getBody();
                 $stream->write('no route defined!');
                 $response = $response
-                    ->withStatus(Response::STATUS_NOT_FOUND)
-                    ->withBody($stream);
+                    ->withStatus(Response::STATUS_NOT_FOUND);
         }
 
         $result = $this->callMiddlewares(
@@ -233,14 +198,14 @@ class Engine extends Collection
             ($response !== null) ? $response : $this->container['response']
         );
 
-        $this->finalize($result[1])->send();
+        $this->finalize($response)->send();
     }
 
     /**
      * Invoke application
      *
      */
-    public function __invoke(Request $request, Response $response)
+    public function __invoke($request, $response)
     {
         return [$request, $response];
     }

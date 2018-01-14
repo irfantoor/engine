@@ -4,9 +4,7 @@ namespace IrfanTOOR\Engine\Http;
 
 use Psr\Http\Message\StreamInterface;
 use GuzzleHttp\Stream\Stream as GStream;
-
 use IrfanTOOR\Engine\Exception;
-use IrfanTOOR\Engine\Http\Factory;
 
 /**
  * Describes a data stream.
@@ -17,8 +15,23 @@ use IrfanTOOR\Engine\Http\Factory;
  */
 class Stream extends GStream implements StreamInterface
 {
-    public static function factory($contents = '', array $options=[]) {
-        return Factory::createStream($contents, $options);
+
+    public static function createFromString($contents, $options = [])
+    {
+        $mode = $options['metadata']['mode'] ?: 'r+';
+        $stream = fopen('php://temp', $mode);
+        if ($contents !== '') {
+            fwrite($stream, $contents);
+            fseek($stream, 0);
+        }
+        return new static($stream, $options);
+    }
+
+    public static function createFromFile($file, $options = [])
+    {
+        $mode = $options['metadata']['mode'] ?: 'r';
+        $stream = fopen($file, $mode);
+        return new static($stream, $options);
     }
 
     /**
@@ -35,10 +48,16 @@ class Stream extends GStream implements StreamInterface
      *
      * @throws \InvalidArgumentException if the stream is not a stream resource
      */
-    public function __construct($stream, $options = ['mode' => 'r+'])
+    public function __construct($stream, $options = null)
     {
-        if ($stream)
-            parent::__construct($stream, $options);
+        if (null === $options)
+            $options = [
+                'metadata' => [
+                    'mode' => 'r+'
+                ]
+            ];
+
+        parent::__construct($stream, $options);
     }
 
     /**

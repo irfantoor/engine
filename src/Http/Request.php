@@ -7,7 +7,6 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
 
 use IrfanTOOR\Engine\Exception;
-use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Message;
 
 /**
@@ -38,10 +37,10 @@ class Request extends Message implements RequestMethodInterface, RequestInterfac
      * Constructs the Request
      *
      */
-    function __construct()
+    function __construct($method = self::METHOD_GET, $url = '/')
     {
-        $this->method = self::METHOD_GET;
-        # $this->uri    = new Uri('/');
+        $this->method = $this->validate('method', $method);
+        $this->uri    = new Uri($url);
 
         parent::__construct();
     }
@@ -93,7 +92,8 @@ class Request extends Message implements RequestMethodInterface, RequestInterfac
      */
     public function getRequestTarget()
     {
-        return $this->uri->__toString();
+        $path = $this->getUri()->getPath();
+        return ltrim(rtrim($path, '/'), '/') . '/';
     }
 
     /**
@@ -115,10 +115,11 @@ class Request extends Message implements RequestMethodInterface, RequestInterfac
      */
     public function withRequestTarget($requestTarget)
     {
-        if ((string) $this->uri === $requestTarget)
+        if ($requestTarget === $this->getRequestTarget())
             return $this;
 
-        $clone = clone $this;
+        $uri = $this->uri->withPath($requestTarget);
+        return $this->withUri($uri);
     }
 
     /**

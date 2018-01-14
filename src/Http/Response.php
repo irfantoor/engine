@@ -100,9 +100,9 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
     protected $code;
     protected $phrase;
 
-    function __construct()
+    function __construct($code = self::STATUS_OK)
     {
-        $this->code   = self::STATUS_OK;
+        $this->code   = $this->validate('code', $code);
         $this->phrase = $this->getReasonPhrase($this->code);
 
         // constructs the message
@@ -161,27 +161,21 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
      * @return static
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
-    public function withStatus($code, $reasonPhrase = '')
+    public function withStatus($code, $reasonPhrase = null)
     {
-        $code = $this->validate('code', $code);
+        $code   = $this->validate('code', $code);
+        $phrase = $this->getReasonPhrase($code);
 
-        if (null === $reasonPhrase) {
-            if ($code === $this->code) {
-                return $this;
-            }
+        if ($reasonPhrase === null && $code === $this->code) {
+            return $this;
+        } elseif($reasonPhrase === $this->phrase && $code === $this->code) {
+            return $this;
         } else {
-            if (
-                ($code === $this->code) &&
-                ($this->phrase === $this->getReasonPhrase($code))
-            ){
-                return $this;
-            }
+            $clone = clone $this;
+            $clone->code = $code;
+            $clone->phrase = $reasonPhrase ?: $clone->getReasonPhrase($code);
+            return $clone;
         }
-
-        $clone = clone $this;
-        $clone->code = $code;
-        $clone->phrase = ($reasonPhrase != '' ? $reasonPhrase : $this->getReasonPhrase($code));
-        return $clone;
     }
 
      /**
@@ -200,8 +194,8 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
      public function getReasonPhrase()
      {
          $code = $this->getStatusCode();
-         $code = $this->validate('code', $code);
-             return self::$phrases[$code];
+         # $code = $this->validate('code', $code);
+         return self::$phrases[$code] ?: 'NOT_DEFINED';
      }
 
     /**
@@ -210,22 +204,33 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
     */
     function send()
     {
-        $body = (string) $this->body;
+        $http_line = sprintf('HTTP/%s %s %s',
+            $this->getProtocolVersion(),
+            $this->getStatusCode(),
+            $this->getReasonPhrase()
+        );
 
-        #### Process and send Headers
-        if (!headers_sent()) {
-            # if ($cookie)
-            #     $cookie->send();
-           $this->headers->send();
-           header(
-               'HTTP/' .
-               $this->getProtocolVersion() . ' ' .
-               $this->getStatusCode() . ' ' .
-               $this->getReasonPhrase($status));
+        header($http_line, true, $this->getStatusCode());
+
+        foreach ($this->getHeaders() as $name => $values) {
+            foreach ($values as $value) {
+                header("$name: $value", false);
+            }
         }
 
-        # send the body
-        echo $body;
+        $stream = $this->getBody();
+
+        // if ($stream->isSeekable()) {
+        //     $stream->rewind();
+        // }
+        //
+        // while (!$stream->eof()) {
+        //     echo $stream->read(1024 * 8);
+        // }
+        //
+
+        echo (string) $stream;
+
         die();
     }
 }

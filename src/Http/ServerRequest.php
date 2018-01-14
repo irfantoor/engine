@@ -57,28 +57,40 @@ class ServerRequest extends Request implements ServerRequestInterface
     protected $files;
     protected $post;
 
-    function __construct()
+    public function __construct($env = [])
     {
+        # todo --
+        if (!isset($_SESSION))
+             session_start();
+
+        if (!($env instanceof Environment))
+            $env = new Environment($env);
+
+        // Sets the defaults
         parent::__construct();
-        // $env = new Environment($mock);
-        //
-        // $this->version = str_replace('HTTP/', '', $env['SERVER_PROTOCOL']);
-        // $this->method  = $env['REQUEST_METHOD'];
-        // $this->uri     = Factory::createUri::createFromEnvironment($env);
-        // $this->headers = Headers::createFromEnvironment($env);
-        // $this->server  = $env->toArray();
-        // $this->cookies = $_COOKIE;
-        // $this->query   = $_GET;
-        // $this->files   = UploadedFile::createFromEnvironment($_FILES);
-        // $this->post    = $_POST;
-        //
-        // // create an array of attributes
-        // $this->attributes = array_merge(
-        //     ($_FILES ?: []),
-        //     ($_GET ?: []),
-        //     ($_POST ?: []),
-        //     ($_COOKIE ?: [])
-        // );
+        $uri = Uri::createFromEnvironment($env);
+        $cookies = Cookie::createFromArray($_COOKIE, [
+            'domain' => $uri->getHost()
+        ]);
+        
+        $this->version = str_replace('HTTP/', '', $env['SERVER_PROTOCOL']);
+        $this->method  = $env['REQUEST_METHOD'];
+        $this->uri     = $uri;
+        $this->headers = Headers::createFromEnvironment($env);
+        $this->server  = $env->toArray();
+        $this->cookies = $cookies;
+        $this->query   = $_GET;
+        $this->files   = UploadedFile::createFromArray($_FILES);
+        $this->post    = $_POST;
+        $this->session = $_SESSION;
+
+        // create an array of attributes
+        $this->attributes = array_merge(
+            ($_FILES ?: []),
+            ($_GET ?: []),
+            ($_POST ?: []),
+            ($_COOKIE ?: [])
+        );
     }
 
     function validate($name, $value)

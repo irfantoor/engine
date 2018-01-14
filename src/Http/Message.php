@@ -19,13 +19,10 @@ class Message implements MessageInterface
 
         // $headers can be an array of headers or an instance of Headers
         if (!($headers instanceof Headers)) {
-            if (!is_array($headers))
-                throw new Exception('passed headers can either be an array or an instance of Headers');
-
             $this->headers = new Headers($headers);
         }
 
-        $this->body    = $body;
+        $this->body = $this->validate('body', $body);
     }
 
     function __clone()
@@ -46,11 +43,13 @@ class Message implements MessageInterface
             case 'version':
                 if (!in_array($version, ['1.0', '1.1', '2', '2.0']))
                     throw new Exception('version: ' . $version . ', is not valid');
+
                 return $version;
 
             case 'body':
                 if ($body && !($body instanceof StreamInterface))
                     throw new Exception('body must be a StreamInterface');
+
                 return $body;
 
             default:
@@ -260,8 +259,16 @@ class Message implements MessageInterface
      */
     public function getBody()
     {
-        if (!$this->body)
-            $this->body = new Stream('', ['metadata' => ['mode' => 'rw']]);
+
+        if (!$this->body) {
+            // $options = [
+            //     'metadata' => [
+            //         'mode' => 'r+'
+            //     ]
+            // ];
+            $contents = '';
+            $this->body = Stream::createFromString('');
+        }
 
         return $this->body;
     }

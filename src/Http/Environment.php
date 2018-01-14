@@ -7,14 +7,10 @@ use IrfanTOOR\Collection;
 
 class Environment extends Collection
 {
-    function __construct($mock = [])
+    function __construct($data = [])
     {
-        if (!is_array($mock))
-            throw new Exception('mocked environment data must be an array');
-
-        # todo --
-        # if (!isset($_SESSION))
-        #     session_start();
+        if (!is_array($data))
+            throw new Exception('to be mocked $data must be an array');
 
         # from slim framework
         if ((isset($mock['HTTPS']) && $mock['HTTPS'] !== 'off') ||
@@ -46,8 +42,7 @@ class Environment extends Collection
                 'REQUEST_TIME_FLOAT'   => microtime(true),
             ],
             $_SERVER,
-            $mock
-            # ['SESSION' => $_SESSION]
+            $data
         );
 
         parent::__construct($data);

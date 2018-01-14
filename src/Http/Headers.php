@@ -22,7 +22,44 @@ class Headers extends Collection
         'AUTH_TYPE' => 1,
     ];
 
-    function __construct($init = [])
+    /**
+     * Create Headers from Enviroment class or an array of $_SERVER
+     *
+     * @param Environment|array $env
+     *
+     * @return Headers Collection
+     */
+    public static function createFromEnvironment($env = [])
+    {
+        if (!($env instanceof Environment)) {
+            $env = new Environment($env);
+        }
+
+        // Headers from environment
+        $data = [];
+        foreach($env as $k=>$v) {
+            $k = strtoupper($k);
+            if (strpos($k, 'HTTP_') === 0) {
+                $k = substr($k, 5);
+            } else {
+                if (!isset(static::$special[$k]))
+                    continue;
+            }
+
+            // normalize key
+            $k = str_replace(
+                ' ',
+                '-',
+                ucwords(strtolower(str_replace('_', ' ', $k)))
+            );
+
+            $data[$k] = $v;
+        }
+
+        return new static($data);
+    }
+
+    public function __construct($init = [])
 	{
         parent::__construct($init);
 	}
