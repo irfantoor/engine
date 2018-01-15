@@ -11,13 +11,10 @@ use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Response;
 use IrfanTOOR\Engine\Http\Uri;
 use IrfanTOOR\Engine\Http\Stream;
-use IrfanTOOR\Engine\MiddlewareTrait;
 use IrfanTOOR\Engine\Router;
 
 class Engine extends Collection
 {
-    use Engine\MiddlewareTrait;
-
     const VERSION = '1.0';
 
     protected static $instance;
@@ -32,7 +29,44 @@ class Engine extends Collection
         Debug::enable($this->config('debug.level', 0));
         $this->data = $this->config('data', []);
 
-        $this->container = new Container();
+        $container = new Container();
+
+        # todo later in a separate file
+        $container['router'] = function() {
+            return new Router();
+        };
+
+        $container['environment'] = function() {
+            return new Environment();
+        };
+
+        $container['uri'] = function() {
+            #$c = Engine::instance()->container();
+            $container = $this->container();
+            return Uri::createFromEnvironment($container['environment']);
+        };
+
+        $container->factory('request', function() {
+            #$c = Engine::instance()->container();
+            $container = $this->container();
+            return new Request($container['environment']);
+        });
+
+        $container->set('serverrequest', function() {
+            return new ServerRequest();
+        });
+
+        // $container['request'] = function() {
+        //     #$c = Engine::instance()->container();
+        //     $container = $this->container();
+        //     return new ServerRequest($container['environment']);
+        // };
+
+        $container->factory('response', function() {
+            return new Response();
+        });
+
+        $this->container = $container;
     }
 
     public static function instance()
@@ -96,54 +130,54 @@ class Engine extends Collection
     {
         $container = $this->container();
 
-        # todo later in a separate file
-        if (!isset($container['router'])) {
-            $container['router'] = function() {
-                return new Router();
-            };
-        }
-
-        if (!isset($container['environment'])) {
-            $container['environment'] = function() {
-                return new Environment();
-            };
-        }
-
-        if (!isset($container['uri'])) {
-            $container['uri'] = function() {
-                #$c = Engine::instance()->container();
-                $container = $this->container();
-                return Uri::createFromEnvironment($container['environment']);
-            };
-        }
-
-        if (!isset($container['request'])) {
-            $container->factory('request', function() {
-                #$c = Engine::instance()->container();
-                $container = $this->container();
-                return new Request($container['environment']);
-            });
-        }
-
-        if (!isset($container['serverrequest'])) {
-            $container->set('serverrequest', function() {
-                return new ServerRequest();
-            });
-        }
-
-        if (!isset($container['request'])) {
-            $container['request'] = function() {
-                #$c = Engine::instance()->container();
-                $container = $this->container();
-                return new ServerRequest($container['environment']);
-            };
-        }
-
-        if (!isset($container['response'])) {
-            $container['response'] = function() {
-                return new Response();
-            };
-        }
+        // # todo later in a separate file
+        // if (!isset($container['router'])) {
+        //     $container['router'] = function() {
+        //         return new Router();
+        //     };
+        // }
+        //
+        // if (!isset($container['environment'])) {
+        //     $container['environment'] = function() {
+        //         return new Environment();
+        //     };
+        // }
+        //
+        // if (!isset($container['uri'])) {
+        //     $container['uri'] = function() {
+        //         #$c = Engine::instance()->container();
+        //         $container = $this->container();
+        //         return Uri::createFromEnvironment($container['environment']);
+        //     };
+        // }
+        //
+        // if (!isset($container['request'])) {
+        //     $container->factory('request', function() {
+        //         #$c = Engine::instance()->container();
+        //         $container = $this->container();
+        //         return new Request($container['environment']);
+        //     });
+        // }
+        //
+        // if (!isset($container['serverrequest'])) {
+        //     $container->set('serverrequest', function() {
+        //         return new ServerRequest();
+        //     });
+        // }
+        //
+        // if (!isset($container['request'])) {
+        //     $container['request'] = function() {
+        //         #$c = Engine::instance()->container();
+        //         $container = $this->container();
+        //         return new ServerRequest($container['environment']);
+        //     };
+        // }
+        //
+        // if (!isset($container['response'])) {
+        //     $container['response'] = function() {
+        //         return new Response();
+        //     };
+        // }
 
         $request  = $container['serverrequest'];
         $response = $container['response'];
@@ -176,14 +210,7 @@ class Engine extends Collection
                 if (!method_exists($class, $method))
                     $method  = 'defaultMethod';
 
-                $next = $this;
-                $this->addMiddleware(function($request, $response, $next) use($class, $method, $args){
-                    $result = $next($request, $response);
-                    $response = $class->$method($request, $result[1], $args);
-                    return $response;
-                });
-
-                # $response = $class->$method($request, $response, $args);
+                $response = $class->$method($request, $response, $args);
                 break;
 
             default:
@@ -193,20 +220,6 @@ class Engine extends Collection
                     ->withStatus(Response::STATUS_NOT_FOUND);
         }
 
-        $result = $this->callMiddlewares(
-            ($request !== null)  ? $request : $this->container['request'],
-            ($response !== null) ? $response : $this->container['response']
-        );
-
         $this->finalize($response)->send();
-    }
-
-    /**
-     * Invoke application
-     *
-     */
-    public function __invoke($request, $response)
-    {
-        return [$request, $response];
     }
 }

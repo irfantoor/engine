@@ -19,7 +19,6 @@ use IrfanTOOR\Engine\Http\Stream;
 use IrfanTOOR\Engine\Http\UploadedFile;
 use IrfanTOOR\Engine\Http\Uri;
 
-
 define('HACKER_MODE', true);
 
 // $uri  = Factory::createUri(
@@ -65,18 +64,18 @@ define('HACKER_MODE', true);
 // print_r($s->write('Shello'));
 // print_r((string) $s);
 
-$ie = new Engine([
-    'debug' => [
-        'level' => 1,
-    ]
-]);
-
-
-
-
-$ie->run();
-exit;
-
+// $ie = new Engine([
+//     'debug' => [
+//         'level' => 1,
+//     ]
+// ]);
+//
+//
+//
+//
+// $ie->run();
+// exit;
+//
 
 
 // $uri = new Uri('http://example.com');
@@ -124,50 +123,50 @@ exit;
 //
 // exit;
 
-class Hello extends Middleware
-{
-    protected $method;
-    public function __construct($method)
-    {
-        $this->method = $method;
-    }
+// class Hello extends Middleware
+// {
+//     protected $method;
+//     public function __construct($method)
+//     {
+//         $this->method = $method;
+//     }
+//
+//     public function __invoke(Request $request, Response $response, $next = null)
+//     {
+//         $request = $request->withMethod($this->method);
+//
+//         if ($next)
+//             list($request, $response) = $next($request, $response);
+//
+//         return [$request, $response];
+//     }
+// }
 
-    public function __invoke(Request $request, Response $response, $next = null)
-    {
-        $request = $request->withMethod($this->method);
-
-        if ($next)
-            list($request, $response) = $next($request, $response);
-
-        return [$request, $response];
-    }
-}
-
-class Auth extends Middleware
-{
-    protected $id;
-
-    public function __construct($id)
-    {
-        $this->id = $id;
-    }
-
-    public function __invoke(Request $request, Response $response, $next = null)
-    {
-        if (md5($this->id) !== '24b90bc48a67ac676228385a7c71a119') {
-            $body = $response->getBody();
-            $body->write('[' . $this->id . ': Can not be authenticated]');
-
-            $response->send();
-            exit;
-        }
-
-        if ($next)
-            list($request, $response) = $next($request, $response);
-
-        return [$request, $response];
-    }
-}
+// class Auth extends Middleware
+// {
+//     protected $id;
+//
+//     public function __construct($id)
+//     {
+//         $this->id = $id;
+//     }
+//
+//     public function __invoke(Request $request, Response $response, $next = null)
+//     {
+//         if (md5($this->id) !== '24b90bc48a67ac676228385a7c71a119') {
+//             $body = $response->getBody();
+//             $body->write('[' . $this->id . ': Can not be authenticated]');
+//
+//             $response->send();
+//             exit;
+//         }
+//
+//         if ($next)
+//             list($request, $response) = $next($request, $response);
+//
+//         return [$request, $response];
+//     }
+// }
 
 class Controller
 {
@@ -177,8 +176,8 @@ class Controller
     {
         $this->ie = $ie;
 
-        $ie->addMiddleware(new Auth('irfan'));
-        $ie->addMiddleware(new Hello('POST'));
+        // $ie->addMiddleware(new Auth('irfan'));
+        // $ie->addMiddleware(new Hello('POST'));
     }
 
     function color($txt, $color)
@@ -192,7 +191,7 @@ class Controller
         return '<pre>' . $txt . '</pre>';
     }
 
-    function defaultMethod($request, $response)
+    function defaultMethod($request, $response, $args)
     {
         $c = new IrfanTOOR\Console();
 
@@ -203,7 +202,7 @@ class Controller
         $contents = ob_get_clean();
 
         $stream = $response->getBody();
-        $stream->write($contents);
+        $stream->write($contents . print_r($args, 1));
 
         return $response->withStatus(666, 'Tah Dah!');
     }
@@ -211,7 +210,7 @@ class Controller
 
 $ie = new Engine([
     'debug' => [
-        'level' => 1,
+        'level' => 2,
     ]
 ]);
 
@@ -234,17 +233,17 @@ $ie->addRoute('ANY', '.*', function($request, $response){
     return $response;
 });
 
-$request = Request::createFromEnvironment();
-$request = $request->withMethod('SMART');
-
-
-$response = Response::create();
-$stream = $response->getBody();
+// $request = Request::createFromEnvironment();
+// $request = $request->withMethod('SMART');
+//
+//
+// $response = Response::create();
+// $stream = $response->getBody();
 # Debug::dump($request);
 
 # $ie->add(new hello());
 
-$ie->run($request, $response);
+$ie->run();
 #print_r($e->container()['environment']);
 
 
