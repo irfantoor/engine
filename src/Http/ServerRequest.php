@@ -60,8 +60,8 @@ class ServerRequest extends Request implements ServerRequestInterface
     public function __construct($env = [])
     {
         # todo --
-        if (!isset($_SESSION))
-             session_start();
+        // if (!isset($_SESSION))
+        //      session_start();
 
         if (!($env instanceof Environment))
             $env = new Environment($env);
@@ -72,17 +72,17 @@ class ServerRequest extends Request implements ServerRequestInterface
         $cookies = Cookie::createFromArray($_COOKIE, [
             'domain' => $uri->getHost()
         ]);
-        
+
         $this->version = str_replace('HTTP/', '', $env['SERVER_PROTOCOL']);
         $this->method  = $env['REQUEST_METHOD'];
         $this->uri     = $uri;
         $this->headers = Headers::createFromEnvironment($env);
         $this->server  = $env->toArray();
-        $this->cookies = $cookies;
+        $this->cookie  = $cookies;
         $this->query   = $_GET;
         $this->files   = UploadedFile::createFromArray($_FILES);
         $this->post    = $_POST;
-        $this->session = $_SESSION;
+        $this->session = isset($_SESSION) ? $_SESSION : [];
 
         // create an array of attributes
         $this->attributes = array_merge(
@@ -135,7 +135,11 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getCookieParams()
     {
-        return $this->cookies;
+        $para = [];
+        foreach($this->cookies as $cookie) {
+            $para[$cookie->getName()] = $cookie->getValue();
+        }
+        return $para;
     }
 
     /**
@@ -160,8 +164,10 @@ class ServerRequest extends Request implements ServerRequestInterface
         if ($cookies === $this->getCookieParams())
             return $this;
 
+        $cookies = array_merge($this->getCookieParams(), $cookies);
+
         $clone = clone $this;
-        $clone->cookies = $cookies;
+        $clone->cookies = Cookie::createFromArray($cookies);
         return $clone;
     }
 

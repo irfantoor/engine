@@ -13,7 +13,7 @@ class RequestTest extends TestCase
 {
     function getRequest($env=[])
     {
-        return Request::create();
+        return new Request();
     }
 
     function testRequestInstance()

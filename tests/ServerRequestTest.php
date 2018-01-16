@@ -1,11 +1,8 @@
 <?php
 
-use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Factory;
-use IrfanTOOR\Engine\Http\Headers;
+use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\ServerRequest;
-use IrfanTOOR\Engine\Http\Uri;
 
 use PHPUnit\Framework\TestCase;
 
@@ -13,7 +10,7 @@ class ServerRequestTest extends TestCase
 {
     function getRequest($env=[])
     {
-        return Factory::createServerRequest();
+        return new ServerRequest($env);
     }
 
     function testServerRequestInstance()

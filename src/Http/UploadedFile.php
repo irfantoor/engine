@@ -2,11 +2,11 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use RuntimeException;
+
 use InvalidArgumentException;
-use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\UploadedFileInterface;
 use IrfanTOOR\Engine\Http\Stream;
+use Psr\Http\Message\UploadedFileInterface;
+use RuntimeException;
 
 /**
  * Value object representing a file uploaded through an HTTP request.
@@ -69,7 +69,6 @@ class UploadedFile implements UploadedFileInterface
         return $uploaded;
     }
 
-
     /**
      * Construct a new UploadedFile instance.
      *
@@ -88,6 +87,18 @@ class UploadedFile implements UploadedFileInterface
         $this->size = $size;
         $this->error = $error;
         $this->sapi = $sapi;
+
+        $options = [];
+        if ($size) {
+            $options['size'] = $size;
+        }
+
+        # try {
+            $this->stream = Stream::createFromFile($this->file, $options);
+            $this->size = $size ?: $this->stream->getSize();
+        #} catch(\Exception $e) {
+        #    $this->error = UPLOAD_ERR_NO_FILE;
+        #}
     }
 
     /**
@@ -110,9 +121,6 @@ class UploadedFile implements UploadedFileInterface
     {
         if ($this->moved) {
             throw new \RuntimeException(sprintf('Uploaded file %1s has already been moved', $this->name));
-        }
-        if ($this->stream === null) {
-            $this->stream = Stream::createFromFile($this->file);
         }
 
         return $this->stream;
@@ -183,6 +191,9 @@ class UploadedFile implements UploadedFileInterface
         }
 
         $this->moved = true;
+        $this->stream->detach();
+        $this->stream->close();
+        $this->stream = null;
     }
 
      /**

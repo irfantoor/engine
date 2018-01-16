@@ -5,7 +5,6 @@ namespace IrfanTOOR\Engine\Http;
 use Fig\Http\Message\RequestMethodInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
-
 use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Message;
 

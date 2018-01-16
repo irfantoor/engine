@@ -20,8 +20,19 @@ class ResponseTest extends TestCase
         $headers = null,
         $body    = null
     ){
-        $response = IrfanTOOR\Engine\Http\Factory::createResponse();
-        return new Response($status, $headers, $body);
+        $response = new Response($status);
+
+        if ($headers) {
+            foreach ($headers as $key => $value) {
+                $response = $response->withHeader($key, $name);
+            }
+        }
+
+        if (null !== $body) {
+            $response = $response->withBody($body);
+        }
+
+        return $response;
     }
 
     function testResponseInstance()
@@ -67,21 +78,19 @@ class ResponseTest extends TestCase
 
     function testParameterInitialization()
     {
-        $response = Response::create(
-            [
-                'code' => Response::STATUS_NOT_FOUND,
-                'body' => 'Hello World!',
-            ]
-        );
+        $response = new Response(Response::STATUS_NOT_FOUND);
 
         $this->assertEquals(
             Response::STATUS_NOT_FOUND,
             $response->getStatusCode()
         );
+    }
 
-        $this->assertEquals(
-            'Hello World!',
-            (string) $response->getBody()
-        );
+    function testWrite()
+    {
+        $response = (new Response())
+                        ->write('Hello World!');
+
+        $this->assertEquals('Hello World!', (string) $response->getBody());
     }
 }

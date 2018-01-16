@@ -3,9 +3,7 @@
 namespace IrfanTOOR\Engine\Http;
 
 use InvalidArgumentException;
-use IrfanTOOR\Collection;
 use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Debug;
 use Psr\Http\Message\UriInterface;
 
 /**
@@ -82,6 +80,9 @@ Class Uri implements UriInterface
             }
 
             $parsed = parse_url($url);
+            if (!$parsed)
+                throw new InvalidArgumentException('Invalid url');
+
             foreach($parsed as $k=>$v)
                 $this->$k = $this->validate($k, $v);
 
@@ -116,16 +117,11 @@ Class Uri implements UriInterface
                 return $scheme;
 
             case 'port':
-                $port = (
-                    $port &&
-                    (self::$default_ports[$scheme] != $port)
-                    ) ? $port : null;
-
                 if (
                     !is_null($port) &&
                     (!is_integer($port) || ($port < 1 || $port > 65535))
                 ) {
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         'Uri port must be null or an integer between
                         1 and 65535 (inclusive)'
                      );
@@ -137,7 +133,7 @@ Class Uri implements UriInterface
                     !is_string($fragment) &&
                     !method_exists($fragment, '__toString')
                 ) {
-                    throw new \InvalidArgumentException(
+                    throw new InvalidArgumentException(
                         'Uri fragment must be a string'
                     );
                 }
@@ -171,6 +167,13 @@ Class Uri implements UriInterface
         $this->userinfo  = $this->user . (
             ($this->user && $this->pass) ? ':' . $this->pass : ''
         );
+
+        if ($this->port) {
+            $default_port = self::$default_ports[$this->scheme] ?: null;
+            if ($default_port === $this->port) {
+                $this->port = null;
+            }
+        }
 
         $this->authority =
             ($this->userinfo ? $this->userinfo . '@' : '') .

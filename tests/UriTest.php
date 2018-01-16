@@ -12,7 +12,7 @@ class UriTest extends TestCase
     function getUri($url = '')
     {
         #return new Uri($url);
-        return Factory::createUri($url);
+        return new Uri($url);
     }
 
     function testUriInstance()
@@ -49,4 +49,13 @@ class UriTest extends TestCase
         $this->assertEquals('one', $uri->getFragment());
         $this->assertEquals('user:password@sub.host.com:8080', $uri->getAuthority());
     }
+
+    /**
+     * @expectedException \InvalidArgumentException
+     */
+    public function testExceptionWhenUriIsInvalid()
+    {
+        $this->getUri(':');
+    }
+
 }

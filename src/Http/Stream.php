@@ -2,9 +2,9 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use Psr\Http\Message\StreamInterface;
 use GuzzleHttp\Stream\Stream as GStream;
 use IrfanTOOR\Engine\Exception;
+use Psr\Http\Message\StreamInterface;
 
 /**
  * Describes a data stream.
@@ -30,8 +30,13 @@ class Stream extends GStream implements StreamInterface
     public static function createFromFile($file, $options = [])
     {
         $mode = $options['metadata']['mode'] ?: 'r';
+        if (!file_exists($file)) {
+            throw new Exception('file: '. $file .', not found');
+        }
+        
         $stream = fopen($file, $mode);
-        return new static($stream, $options);
+        if (is_resource($stream))
+            return new static($stream, $options);
     }
 
     /**

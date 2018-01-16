@@ -4,6 +4,7 @@ namespace IrfanTOOR\Engine\Http;
 
 use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface;
+use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Message;
 
 /**
@@ -161,21 +162,19 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
      * @return static
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
-    public function withStatus($code, $reasonPhrase = null)
+    public function withStatus($code, $phrase = null)
     {
         $code   = $this->validate('code', $code);
-        $phrase = $this->getReasonPhrase($code);
+        $phrase = $phrase ?: $this->phrase;
 
-        if ($reasonPhrase === null && $code === $this->code) {
+        if ($phrase === $this->phrase && $code === $this->code) {
             return $this;
-        } elseif($reasonPhrase === $this->phrase && $code === $this->code) {
-            return $this;
-        } else {
-            $clone = clone $this;
-            $clone->code = $code;
-            $clone->phrase = $reasonPhrase ?: $clone->getReasonPhrase($code);
-            return $clone;
         }
+
+        $clone = clone $this;
+        $clone->code = $code;
+        $clone->phrase = $phrase;
+        return $clone;
     }
 
      /**
@@ -194,8 +193,8 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
      public function getReasonPhrase()
      {
          $code = $this->getStatusCode();
-         # $code = $this->validate('code', $code);
-         return self::$phrases[$code] ?: 'NOT_DEFINED';
+         $phrase = $this->phrase ?: (self::$phrases[$code] ?: 'NOT_DEFINED');
+         return $phrase;
      }
 
     /**

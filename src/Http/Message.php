@@ -2,7 +2,7 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use IrfanTOOR\Exception;
+use IrfanTOOR\Engine\Exception;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 use IrfanTOOR\Engine\Http\Stream;
@@ -88,7 +88,7 @@ class Message implements MessageInterface
             return $this;
 
         $clone = clone $this;
-        $clone->version = $this->validate('version', $version);
+        $clone->version = $clone->validate('version', $version);
         return $clone;
     }
 
@@ -195,7 +195,7 @@ class Message implements MessageInterface
      */
     public function withHeader($name, $value)
     {
-        if ($this->headers->get($name, null) === $value)
+        if ($value === $this->headers->get($name, null))
             return $this;
 
         $clone = clone $this;
@@ -248,7 +248,7 @@ class Message implements MessageInterface
             return $this;
 
         $clone = clone $this;
-        $this->headers->remove($name);
+        $clone->headers->remove($name);
         return $clone;
     }
 
@@ -289,7 +289,24 @@ class Message implements MessageInterface
     public function withBody(StreamInterface $body)
     {
         $clone = clone $this;
-        $this->body = $body;
+        $clone->body = $body;
         return $clone;
+    }
+
+    /**
+     * Writes at the end of the stream
+     * It is not part of the PSR Implementation
+     *
+     * @param string $contents
+     */
+    public function write($contents)
+    {
+        if (!is_string($contents)) {
+            throw new Exception('$contents can only be of type string');
+        }
+
+        $stream = $this->getBody();
+        $stream->write($contents);
+        return $this;
     }
 }
