@@ -16,16 +16,7 @@
         "irfantoor/container": "^0.9.0",
         "irfantoor/console": "^0.2.0",
         "fig/http-message-util": "^1.1",
-        "guzzlehttp/streams": "^3.0",
-        "league/flysystem": "^1.0",
-        "monolog/monolog": "^1.23",
-        "erusev/parsedown": "^1.6",
-        "middlewares/utils": "^0.14.0",
-        "http-interop/response-sender": "^1.0",
-        "http-interop/http-factory-tests": "^0.3.0",
-        "http-interop/http-server-handler": "^1.0",
-        "http-interop/http-server-middleware": "^1.0",
-        "http-interop/http-factory": "^0.3.0"
+        "guzzlehttp/streams": "^3.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^6.4"

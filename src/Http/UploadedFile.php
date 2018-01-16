@@ -93,12 +93,12 @@ class UploadedFile implements UploadedFileInterface
             $options['size'] = $size;
         }
 
-        # try {
+        try {
             $this->stream = Stream::createFromFile($this->file, $options);
             $this->size = $size ?: $this->stream->getSize();
-        #} catch(\Exception $e) {
-        #    $this->error = UPLOAD_ERR_NO_FILE;
-        #}
+        } catch(\Exception $e) {
+            $this->error = UPLOAD_ERR_NO_FILE;
+        }
     }
 
     /**
