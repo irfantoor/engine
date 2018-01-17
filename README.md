@@ -10,8 +10,8 @@ Irfan's Engine now implements the PSR-11 classes and conforms to the validation
 constraints imposed. You can break out of these constraints by using:
 
 ```php
-  // You can enable the hacker mode be defining this constant
-	define('HACKER_MODE', true);
+// You can enable the hacker mode by defining this constant
+define('HACKER_MODE', true);
 ```
 
 If this constant is defined as a non false value, you can avoid all of the
@@ -81,22 +81,22 @@ $ie = new IrfanTOOR\Engine();
 
 # GET method => http://example.com/...
 $ie->addRoute('GET', '/', function ($request, $response){
-		$response = $response->write('Hello World!');
-		return $response;
+	$response = $response->write('Hello World!');
+	return $response;
 });
 
 # name passed as http://example.com/hello/?name=alfa
 $ie->addRoute('GET', 'hello', function ($request, $response){
-		$name = $request->getAttribute('name', 'World');
-		return $response->write('Hello ' . ucfirst($name) . '!')
+	$name = $request->getAttribute('name', 'World');
+	return $response->write('Hello ' . ucfirst($name) . '!')
 });
 
 
 # ANY allowed method => http://example.com/...
 $ie->addRoute('ANY', '.*', function ($request, $response){
-		return $response
-			->withStatus(404)
-			->write('Error: page not found');
+	return $response
+		->withStatus(404)
+		->write('Error: page not found');
 });
 
 $ie->run();
@@ -113,18 +113,16 @@ or as follows, if using without the engine:
 
 ```php
 <?php
-  ...
-	use IrfanTOOR\Engine\Http\Environment;
+use IrfanTOOR\Engine\Http\Environment;
 
-	$e = new Environment([
-		'HTTP_HOST' => 'example.com',
-		'Engine' => 'My Engine v1.0',
-	]);
-	...
+$e = new Environment([
+	'HTTP_HOST' => 'example.com',
+	'Engine' => 'My Engine v1.0',
+]);
 
 // Environment is a case sensitive collection
-	$host   = $e->get('HTTP_HOST', 'localhost');
-	$engine = $e->get('Engine');
+$host   = $e->get('HTTP_HOST', 'localhost');
+$engine = $e->get('Engine');
 ```
 
 ### Uri
@@ -133,13 +131,13 @@ Whenever a server request is created, a Uri containing the parsed information of
 requested url is also present and can be accessed as:
 
 ```php
-	$request  = new ServerRequest();
-	$response = new Response();
-	# $ie->addRoute('ANY', '.*', function ($request, $response){ ...
+$request  = new ServerRequest();
+$response = new Response();
+// $ie->addRoute('ANY', '.*', function ($request, $response){ ...
 
-	$uri =  $request->getUri();
-	$host = $uri->getHost();
- 	$port = $uri->getPort();
+$uri =  $request->getUri();
+$host = $uri->getHost();
+$port = $uri->getPort();
 ```
 
 ### Headers
@@ -147,20 +145,20 @@ requested url is also present and can be accessed as:
 ```php
 <?php
 ...
-		# Setting a header
-		$response->withHeader('Content-Type', 'text/plain');
-		$response->withHeader('keywords', 'hello, world');
+# Setting a header
+$response->withHeader('Content-Type', 'text/plain');
+$response->withHeader('keywords', 'hello, world');
 
-		# Removing a header
-		$response->withoutHeader('unwanted-header');
+# Removing a header
+$response->withoutHeader('unwanted-header');
 
-		# checking a header
-		if ($response->hasHeader('content-type')) {
-			# do something ...
-		}
+# checking a header
+if ($response->hasHeader('content-type')) {
+	# do something ...
+}
 
-		# getting a header, note that the key of headers is not case sensitive
-		$content_type = $response->getHeader('CONTENT-type');  
+# getting a header, note that the key of headers is not case sensitive
+$content_type = $response->getHeader('CONTENT-type');  
 ...
 ```
 
@@ -181,12 +179,12 @@ $router->add('ANY', '.*',    'Default'); # Note any is not a method but a direct
 ...
 $result = router->process('GET', 'http://example.com/?hello=world');
 switch($result['type']) {
-		case 'closure':
-			...
-		case 'string':
-			...
-		default:
-			...
+	case 'closure':
+		...
+	case 'string':
+		...
+	default:
+		...
 }
 ```
 
@@ -246,11 +244,10 @@ $config = require("path/to/config.php");
 $ie = new IrfanTOOR\Engine($config);
 
 $ie->addRoute('GET', '/', function($request, $response) use($ie){
-		$response->write('Welcome to ' . $ie->config('site.name') . '!');
+	$response->write('Welcome to ' . $ie->config('site.name') . '!');
 });
 
 $ie->run();
-...
 ```
 
 ### Debugging
@@ -262,15 +259,15 @@ using this class in any of your code directly as:
 
 ```php
 <?php
-	require "path/to/vendor/autoload.php";
-	use IrfanTOOR\Engine\Debug;
-	Debug::enable(2); # 2 is debug level
+require "path/to/vendor/autoload.php";
+use IrfanTOOR\Engine\Debug;
+Debug::enable(2); # 2 is debug level
 
-	...
-	# You can use it to dump data etc.
+...
+# You can use it to dump data etc.
 
-	Debug::dump($request);
-	Debug::dump($response->getHeaders());
+Debug::dump($request);
+Debug::dump($response->getHeaders());
 ```
 
 Debug has a dependency on IrfanTOOR\\Console for dumping the results on the
