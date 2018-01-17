@@ -1,12 +1,12 @@
-Irfan's Engine v0.8
-===================
+Irfan's Engine v0.8.3
+=====================
 
 A bare-minimum PHP framework, with the spirit with which the HTTP was invented.
 focussing on the requests and the responses. A Swiss-knife for world-wide-web.
 
 The objective of this library is to be a Bare-minimum, Embeddable and Educative.
 
-Irfan's Engine now implements the PSR-11 classes and conforms to the validation
+Irfan's Engine now implements the PSR-7 classes and conforms to the validation
 constraints imposed. You can break out of these constraints by using:
 
 ```php
