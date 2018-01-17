@@ -191,7 +191,6 @@ class UploadedFile implements UploadedFileInterface
         }
 
         $this->moved = true;
-        $this->stream->detach();
         $this->stream->close();
         $this->stream = null;
     }

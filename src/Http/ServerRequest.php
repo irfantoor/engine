@@ -82,11 +82,9 @@ class ServerRequest extends Request implements ServerRequestInterface
         $this->query   = $_GET;
         $this->files   = UploadedFile::createFromArray($_FILES);
         $this->post    = $_POST;
-        $this->session = isset($_SESSION) ? $_SESSION : [];
 
         // create an array of attributes
         $this->attributes = array_merge(
-            ($_FILES ?: []),
             ($_GET ?: []),
             ($_POST ?: []),
             ($_COOKIE ?: [])

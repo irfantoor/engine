@@ -34,7 +34,6 @@ class Router extends Collection
 
     public function setAllowedMethods($methods = null)
     {
-
         if (!$methods) {
             $this->strict_mode = false;
             $methods = self::$methods;

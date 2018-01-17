@@ -6,6 +6,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use Psr\Http\Message\ResponseInterface;
 use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Message;
+use IrfanTOOR\Engine\Http\Stream;
 
 /**
  * Representation of an outgoing, server-side response.
@@ -101,10 +102,10 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
     protected $code;
     protected $phrase;
 
-    function __construct($code = self::STATUS_OK)
+    function __construct()
     {
-        $this->code   = $this->validate('code', $code);
-        $this->phrase = $this->getReasonPhrase($this->code);
+        $this->code     = self::STATUS_OK;
+        $this->phrase   = null;
 
         // constructs the message
         parent::__construct();
@@ -219,16 +220,13 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
 
         $stream = $this->getBody();
 
-        // if ($stream->isSeekable()) {
-        //     $stream->rewind();
-        // }
-        //
-        // while (!$stream->eof()) {
-        //     echo $stream->read(1024 * 8);
-        // }
-        //
+        if ($stream->isSeekable()) {
+            $stream->rewind();
+        }
 
-        echo (string) $stream;
+        while (!$stream->eof()) {
+            echo $stream->read(1024 * 8);
+        }
 
         die();
     }

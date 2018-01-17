@@ -294,7 +294,7 @@ class Message implements MessageInterface
     }
 
     /**
-     * Writes at the end of the stream
+     * Writes at the end of the stream (It does not clones the Message)
      * It is not part of the PSR Implementation
      *
      * @param string $contents

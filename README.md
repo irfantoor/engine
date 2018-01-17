@@ -1,14 +1,26 @@
-Irfan's Engine
-==============
+Irfan's Engine v0.8
+===================
 
 A bare-minimum PHP framework, with the spirit with which the HTTP was invented.
 focussing on the requests and the responses. A Swiss-knife for world-wide-web.
 
 The objective of this library is to be a Bare-minimum, Embeddable and Educative.
 
-Note: This documentation is just to get you started, you are encouraged to study the
-code as well, which might help you get going, by adding, extending or even writing
-your own classes and/or frameworks.
+Irfan's Engine now implements the PSR-11 classes and conforms to the validation
+constraints imposed. You can break out of these constraints by using:
+
+```php
+  // You can enable the hacker mode be defining this constant
+	define('HACKER_MODE', true);
+```
+
+If this constant is defined as a non false value, you can avoid all of the
+validations, though certain constraints can not be eliminated, which are
+essential for the proper functioning of the underlying system.
+
+Note: This documentation is just to get you started, you are encouraged to study
+the code and the examples in the examples folder, which might help you get going
+, by adding, extending or even writing your own classes and/or frameworks.
 
 ## Installation
 
@@ -28,20 +40,23 @@ Here are a few examples :
 ```php
 <?php
 require '/path/to/ ... vendor/autoload.php';
+use IrfanTOOR\Engine\Http\ServerRequest;
+use IrfanTOOR\Engine\Http\Response;
 
-$res = new IrfanTOOR\Response(200, 'Hello World!');
-$res->send();
+$response = (new Response())
+              ->withStatus(Response::STATUS_IM_A_TEAPOT)
+              ->write('Hello World!')
+...
+$response->send();
 ```
 
 ```php
 <?php
 ...
-$res = new IrfanTOOR\Response();
-
-$res->set('body', 'Hello World!');
-# $res['body'] = 'Hello World!';
-
-$res->send();
+(new Response())
+	->withStatus(Response::STATUS_IM_A_TEAPOT)
+	->write('Hello World!')
+	->send();
 ```
 
 ### Hello World! - using parameters from Request
@@ -49,16 +64,12 @@ $res->send();
 ```php
 <?php
 ...
-$req = new IrfanTOOR\Request();
-$res = new IrfanTOOR\Response();
-
-# name passed as http://example.com/?name=alfa
-$name = $req['get']['name'] ?: 'World!';
-
-$res->set('body', 'Hello ' . $name);
-# $res['body'] = 'Hello World!';
-
-$res->send();
+# name passed as get variable: http://example.com/?name=alfa
+# or posted through a form
+$name = (new ServerRequest)->getAttribute('name', 'World');
+(new Response())
+	->write('Hello ' . ucfirst($name) . '!')
+	->send();
 ```
 
 ### Using Engine and routes
@@ -69,26 +80,23 @@ $res->send();
 $ie = new IrfanTOOR\Engine();
 
 # GET method => http://example.com/...
-$ie->addRoute('GET', '/', function ($req, $res){
-		$res['body'] = 'Welcome Home!';
-		return $res;
+$ie->addRoute('GET', '/', function ($request, $response){
+		$response = $response->write('Hello World!');
+		return $response;
 });
 
 # name passed as http://example.com/hello/?name=alfa
-$ie->addRoute('GET', 'hello', function ($req, $res){
-		$name = $req['get']['name'] ?: 'World!';
-
-		$res->set('body', 'Hello ' . $name);
-		# $res['body'] = 'Hello ' . $name;
-
-		return $res;
+$ie->addRoute('GET', 'hello', function ($request, $response){
+		$name = $request->getAttribute('name', 'World');
+		return $response->write('Hello ' . ucfirst($name) . '!')
 });
 
 
 # ANY allowed method => http://example.com/...
-$ie->addRoute('ANY', '.*', function ($req, $res){
-		$res['status'] = 404;
-		return $res;
+$ie->addRoute('ANY', '.*', function ($request, $response){
+		return $response
+			->withStatus(404)
+			->write('Error: page not found');
 });
 
 $ie->run();
@@ -105,30 +113,33 @@ or as follows, if using without the engine:
 
 ```php
 <?php
-	$e = new IrfanTOOR\Environment([
+  ...
+	use IrfanTOOR\Engine\Http\Environment;
+
+	$e = new Environment([
 		'HTTP_HOST' => 'example.com',
 		'Engine' => 'My Engine v1.0',
 	]);
 	...
 
-	# Its a locked singleton collection
-	# which can be accessed using static function getInstance
-	$e = IrfanTOOR\Environment::getInstance();
-
-	$host = $e['HTTP_HOST']; # Environment is a case sensitive collection
+// Environment is a case sensitive collection
+	$host   = $e->get('HTTP_HOST', 'localhost');
+	$engine = $e->get('Engine');
 ```
 
 ### Uri
 
-Whenever a request is created, a Uri containing the parsed information of the requested url
-is also present and can be accessed as:
+Whenever a server request is created, a Uri containing the parsed information of the
+requested url is also present and can be accessed as:
 
 ```php
-	$req = new Request();
-	# $ie->addRoute('ANY', '.*', function ($req, $res){ ...
+	$request  = new ServerRequest();
+	$response = new Response();
+	# $ie->addRoute('ANY', '.*', function ($request, $response){ ...
 
-	$host = $req['uri']['host'];
- 	port = $req['uri']['port'];
+	$uri =  $request->getUri();
+	$host = $uri->getHost();
+ 	$port = $uri->getPort();
 ```
 
 ### Headers
@@ -137,19 +148,19 @@ is also present and can be accessed as:
 <?php
 ...
 		# Setting a header
-		$response['headers']['Content-Type'] = 'text/plain';
-		$response['headers']->set('Content-Type', 'text/json');
+		$response->withHeader('Content-Type', 'text/plain');
+		$response->withHeader('keywords', 'hello, world');
 
 		# Removing a header
-		$response['headers']->remove('unwanted-header');
+		$response->withoutHeader('unwanted-header');
 
 		# checking a header
-		if ($response['headers']->has('content-type')) {
+		if ($response->hasHeader('content-type')) {
 			# do something ...
 		}
 
-		# getting a header
-		$content_type = $response['headers']['CONTENT-type']; # the key of headers is case insensitive
+		# getting a header, note that the key of headers is not case sensitive
+		$content_type = $response->getHeader('CONTENT-type');  
 ...
 ```
 
@@ -158,19 +169,21 @@ is also present and can be accessed as:
 ```php
 <?php
 ...
+use IrfanTOOR\Engine\Router;
 
 The router can be independently initialized and used
-$router = new Router(['GET', 'POST']); # Only GET and POST methods are allowed
+$router = new Router();
+$router->setAllowedMethods(['GET', 'POST']);
 
-$router->add('GET', '/',     'home');
-$router->add('GET', 'hello', 'hello');
-$router->add('ANY', '.*',    'default');
-
-$result = $r->process('GET', 'http://example.com/?hello=world');
-switch($result['callable']) {
-		case 'home':
+$router->add('GET', '/',     'Home');
+$router->add('GET', 'hello', 'Hello');
+$router->add('ANY', '.*',    'Default'); # Note any is not a method but a directive.
+...
+$result = router->process('GET', 'http://example.com/?hello=world');
+switch($result['type']) {
+		case 'closure':
 			...
-		case 'hello':
+		case 'string':
 			...
 		default:
 			...
@@ -181,13 +194,20 @@ switch($result['callable']) {
 
 ```php
 <?php
-...
-$ie = new IE();
-$router = $ie->getRouter();
-$router->setAllowedMethods(['GET', 'POST']);
-$router->add('GET', '/', 'home');
-...
-$ie->setRouter($router);
+
+require 'path/to/vendor/autoload.php';
+
+$ie = new IrfanTOOR\Engine([
+	'debug' => [
+		'level' => 1
+	]
+]);
+
+$ie->addRoute('GET', '/', function($request, $response){
+	$response->write('OK');
+	return $response;
+});
+
 $ie->run();
 ```
 
@@ -208,11 +228,13 @@ return [
 
 		'level' => 0, # or can be 1, 2 or 3
 	],
-	'env' 	=> [
+	'environment' 	=> [
 		'REMOTE_ADDR' => '192.168.1.1',
 		'HELLO' => 'WORLD',
 	],
-	'sitename' => 'MySite.com',
+	'site' => [
+		'name' => 'mysite.com',
+	]
 ];
 ```
 
@@ -221,11 +243,10 @@ and then this config can be included like this:
 ```php
 <?php
 $config = require("path/to/config.php");
-$ie = new IE($config);
+$ie = new IrfanTOOR\Engine($config);
 
 $ie->addRoute('GET', '/', function($request, $response) use($ie){
-		$response['body'] = 'Welcome to ' . $ie->config('sitename') . '!';
-		return $response;
+		$response->write('Welcome to ' . $ie->config('site.name') . '!');
 });
 
 $ie->run();
@@ -234,26 +255,27 @@ $ie->run();
 
 ### Debugging
 
-You can enable debugging while coding your application, a short, consise and to the point,
-error description and trace is dumped in case of any exception. You can enable the debugging
-using config if using Irfan's Engine or by simply by using this class in any of your code directly as:
+You can enable debugging while coding your application, a short, concise and to
+the point, error description and trace is dumped in case of any exception. You
+can enable the debugging using config if using Irfan's Engine or by simply by
+using this class in any of your code directly as:
 
 ```php
 <?php
 	require "path/to/vendor/autoload.php";
-	use IrfanTOOR\Debug;
+	use IrfanTOOR\Engine\Debug;
 	Debug::enable(2); # 2 is debug level
 
 	...
-	# Not only will it help debugging the errors but you can use it to dump data etc.
+	# You can use it to dump data etc.
 
 	Debug::dump($request);
-	Debug::dump($response['headers']);
+	Debug::dump($response->getHeaders());
 ```
 
-Debug is single file without any dependency but try using it in the starting index.php or
-bootstrap.php file so that it can detect any errors in the succeeding files.
-
+Debug has a dependency on IrfanTOOR\\Console for dumping the results on the
+console. Try including it in the starting index.php or bootstrap.php file so
+that it can detect any errors in the succeeding files.
 
 ## About
 
