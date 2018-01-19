@@ -1,4 +1,4 @@
-Irfan's Engine v0.8.4
+Irfan's Engine v0.8.5
 =====================
 
 A bare-minimum PHP framework, with the spirit with which the HTTP was invented.

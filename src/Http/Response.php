@@ -102,9 +102,9 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
     protected $code;
     protected $phrase;
 
-    function __construct()
+    function __construct($code = self::STATUS_OK)
     {
-        $this->code     = self::STATUS_OK;
+        $this->code     = $this->validate('code', $code);
         $this->phrase   = null;
 
         // constructs the message
