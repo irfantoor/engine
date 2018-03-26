@@ -3,7 +3,6 @@
 namespace IrfanTOOR\Engine\Http;
 
 use IrfanTOOR\Collection;
-use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Environment;
 
 class Headers extends Collection
