@@ -4,7 +4,7 @@
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use IrfanTOOR\Engine\Http\Headers;
-use IrfanTOOR\Engine\Debug;
+use IrfanTOOR\Debug;
 
 Debug::enable(1);
 $headers = Headers::createFromEnvironment();

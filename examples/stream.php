@@ -4,7 +4,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 
 use IrfanTOOR\Engine\Http\Response;
 use IrfanTOOR\Engine\Http\Stream;
-use IrfanTOOR\Engine\Debug;
+use IrfanTOOR\Debug;
 
 Debug::enable(1);
 

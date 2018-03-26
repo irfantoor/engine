@@ -3,18 +3,49 @@
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use IrfanTOOR\Engine\Http\Cookie;
-use IrfanTOOR\Engine\Debug;
+
+use IrfanTOOR\Debug;
 
 Debug::enable(1);
 
-$cookies = Cookie::createFromArray([
-    'Hello' => 'World!',
-    'locked' => 'again',
-]);
+$cookies = Cookie::createFromArray(
+    [
+        'Hello' => 'World!',
+        'locked' => null,
+    ],
+    [
+        'domain'   => 'localhost',
+        'secure'   => true,
+        'httponly' => true,
+    ]
+);
+
+foreach($cookies as $c)
+    $c->send();
+
+//
+//
+// Debug::dump($cookies[0]->getValue());
+// $cookies[2] = $cookies[0]->withValue(null);
+//
+//
+// Debug::dump($cookies);
+//
+// $c  = new Cookie('hello');
+// $c->send();
+//
+// print_r($c);
 
 
-Debug::dump($cookies[0]->getValue());
-$cookies[2] = $cookies[0]->withValue(null);
+// setcookie('hello', 'world', time() + 24 * 60 * 60);
+Debug::dump(
+    [
+        $c,
+        $_COOKIE
+    ]
+);
 
 
-Debug::dump($cookies);
+
+
+# Debug::dump($c);

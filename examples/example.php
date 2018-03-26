@@ -3,7 +3,7 @@
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use IrfanTOOR\Engine;
-use IrfanTOOR\Engine\Debug;
+use IrfanTOOR\Debug;
 
 define('HACKER_MODE', true);
 
@@ -46,7 +46,7 @@ class Controller
 $ie = new Engine([
     'debug' => [
         'level' => 2,
-    ]
+    ],
 ]);
 
 $ie->addRoute('GET', '/', function($request, $response){
