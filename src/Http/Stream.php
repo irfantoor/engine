@@ -18,7 +18,7 @@ class Stream extends GStream implements StreamInterface
 
     public static function createFromString($contents, $options = [])
     {
-        $mode = $options['metadata']['mode'] ?: 'r+';
+        $mode = isset($options['metadata']['mode']) ? $options['metadata']['mode'] : 'r+';
         $stream = fopen('php://temp', $mode);
         if ($contents !== '') {
             fwrite($stream, $contents);
@@ -29,7 +29,7 @@ class Stream extends GStream implements StreamInterface
 
     public static function createFromFile($file, $options = [])
     {
-        $mode = $options['metadata']['mode'] ?: 'r';
+        $mode = isset($options['metadata']['mode']) ? $options['metadata']['mode'] : 'r+';
         if (!file_exists($file)) {
             throw new Exception('file: '. $file .', not found');
         }
