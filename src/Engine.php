@@ -4,13 +4,9 @@ namespace IrfanTOOR;
 
 use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
-use IrfanTOOR\Engine\Debug;
-use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Factory;
+use IrfanTOOR\Debug;
 use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Response;
-use IrfanTOOR\Engine\Http\Uri;
-use IrfanTOOR\Engine\Http\Stream;
 use IrfanTOOR\Engine\Router;
 
 class Engine extends Collection
@@ -18,6 +14,7 @@ class Engine extends Collection
     const VERSION = '1.0';
 
     protected static $instance;
+    protected $initialized;
     protected $config;
     protected $container;
 
@@ -26,19 +23,21 @@ class Engine extends Collection
         static::$instance = $this;
 
         $this->config = new Collection($config);
-        Debug::enable($this->config('debug.level', 0));
-        $this->data = $this->config('data', []);
 
+        $dl = $this->config('debug.level', 0);
+        if ($dl) {
+            Debug::enable($dl);
+        } else {
+            error_reporting(0);
+        }
+
+        $this->data = $this->config('data', []);
         $this->container = new Container();
     }
 
     public function config($id, $default = null)
     {
         return $this->config->get($id, $default);
-    }
-
-    function container() {
-        return $this->container;
     }
 
     /**
@@ -52,10 +51,21 @@ class Engine extends Collection
     public function __call($method, $args)
     {
         if ($this->container->has($method)) {
-            $obj = $this->container->get($method);
+            $obj = $this->container[$method];
             if (is_callable($obj)) {
                 return call_user_func_array($obj, $args);
+            } else {
+                return $obj;
             }
+        }
+        # set container
+        $class = $this->config('classes.' . $method, null);
+        if ($class) {
+            #throw new \BadMethodCallException("$class");
+            $class = '\\' . $class;
+            $class = new $class;
+            $this->container->set($method, $class);
+            return $class;
         }
 
         throw new \BadMethodCallException("Method $method is not a valid method");
@@ -63,79 +73,15 @@ class Engine extends Collection
 
     function addRoute($method, $path, $handler)
     {
-        if (!isset($this->container['router'])) {
-            $this->container['router'] = function() {
-                return new Router();
-            };
-        }
-
-        $router = $this->container['router'];
+        $router = $this->router();
         $router->addRoute($method, $path, $handler);
-    }
-
-    function finalize(Response $response)
-    {
-        # This function can be overriden in the extended classes
-        # to do some finalization like logging etc.
-        return $response;
     }
 
     function run()
     {
-        $container = $this->container();
-
-        # todo later in a separate file
-        if (!isset($container['router'])) {
-            $container['router'] = function() {
-                return new Router();
-            };
-        }
-
-        if (!isset($container['environment'])) {
-            $container['environment'] = function() {
-                $env = $this->config('environment', []);
-                return new Environment($env);
-            };
-        }
-
-        if (!isset($container['uri'])) {
-            $container['uri'] = function() {
-                $container = $this->container();
-                return Uri::createFromEnvironment($container['environment']);
-            };
-        }
-
-        if (!isset($container['request'])) {
-            $container->factory('request', function() {
-                #$c = Engine::instance()->container();
-                $container = $this->container();
-                return new Request($container['environment']);
-            });
-        }
-
-        if (!isset($container['serverrequest'])) {
-            $container->set('serverrequest', function() {
-                return new ServerRequest();
-            });
-        }
-
-        if (!isset($container['request'])) {
-            $container['request'] = function() {
-                #$c = Engine::instance()->container();
-                $container = $this->container();
-                return new ServerRequest($container['environment']);
-            };
-        }
-
-        if (!isset($container['response'])) {
-            $container['response'] = function() {
-                return new Response();
-            };
-        }
-
-        $request  = $container['serverrequest'];
-        $response = $container['response'];
-        $router   = $container['router'];
+        $request  = $this->serverrequest();
+        $response = $this->response();
+        $router   = $this->router();
         $uri      = $request->getUri();
         $path     = $uri->getPath();
         $basepath = rtrim(ltrim($path, '/'), '/');
@@ -174,6 +120,13 @@ class Engine extends Collection
                     ->withStatus(Response::STATUS_NOT_FOUND);
         }
 
-        $this->finalize($response)->send();
+        $this->finalize($request, $response, $args)->send();
+    }
+
+    function finalize($request, $response, $args)
+    {
+        # This function can be overriden in the extended classes
+        # to do some finalization like logging etc.
+        return $response;
     }
 }
