@@ -56,6 +56,7 @@ class UploadedFileTest extends TestCase
         $error = UPLOAD_ERR_OK;
         $clientFilename = 'test.txt';
         $clientMediaType = 'text/plain';
+        $size = strlen($content);
 
         $file = new UploadedFile($upload, $clientFilename, $clientMediaType, $size, $error);
         $this->assertUploadedFile($file, $content, null, $error, $clientFilename, $clientMediaType);
