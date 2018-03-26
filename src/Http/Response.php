@@ -228,6 +228,6 @@ class Response extends Message implements StatusCodeInterface, ResponseInterface
             echo $stream->read(1024 * 8);
         }
 
-        die();
+        exit;
     }
 }
