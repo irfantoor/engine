@@ -7,6 +7,9 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 use IrfanTOOR\Engine\Http\Stream;
 
+use IrfanTOOR\Debug;
+
+
 class Message implements MessageInterface
 {
     protected $version;
@@ -28,8 +31,8 @@ class Message implements MessageInterface
     function __clone()
     {
         $this->headers = clone $this->headers;
-        if ($this->body)
-            $this->body = clone $this->body;
+        // if ($this->body)
+        //     $this->body = clone $this->body;
     }
 
     function validate($name, $value)
