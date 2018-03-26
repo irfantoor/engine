@@ -78,7 +78,7 @@ class ServerRequest extends Request implements ServerRequestInterface
         $this->uri     = $uri;
         $this->headers = Headers::createFromEnvironment($env);
         $this->server  = $env->toArray();
-        $this->cookie  = $cookies;
+        $this->cookies  = $cookies;
         $this->query   = $_GET;
         $this->files   = UploadedFile::createFromArray($_FILES);
         $this->post    = $_POST;
