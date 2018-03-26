@@ -180,7 +180,7 @@ Class Uri implements UriInterface
             $this->host .
             ($this->port ? ':' . $this->port : '');
 
-        $this->basepath  = rtrim(ltrim($path, '/'), '/');
+        $this->basepath  = rtrim(ltrim($this->path, '/'), '/');
     }
 
     /**
