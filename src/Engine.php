@@ -5,8 +5,11 @@ namespace IrfanTOOR;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
 use IrfanTOOR\Debug;
+// use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Response;
+// use IrfanTOOR\Engine\Http\Uri;
+// use IrfanTOOR\Engine\Http\Stream;
 use IrfanTOOR\Engine\Router;
 
 class Engine extends Collection
@@ -17,10 +20,25 @@ class Engine extends Collection
     protected $initialized;
     protected $config;
     protected $container;
+    protected $default_classes;
 
     function __construct($config=[])
     {
         static::$instance = $this;
+
+        $this->default_classes = [
+            'cookie'         => 'IrfanTOOR\Engine\Http\Cookie',
+            'environment'    => 'IrfanTOOR\Engine\Http\Environment',
+            'request'        => 'IrfanTOOR\Engine\Http\Request',
+            'response'       => 'IrfanTOOR\Engine\Http\Response',
+            'serverrequest'  => 'IrfanTOOR\Engine\Http\ServerRequest',
+            'stream'         => 'IrfanTOOR\Engine\Http\Stream',
+            'uploaded_file'  => 'IrfanTOOR\Engine\Http\UploadedFile',
+            'uri'            => 'IrfanTOOR\Engine\Http\Uri',
+
+            'router'         => 'IrfanTOOR\Engine\Router',
+            'session'        => 'App\Model\Session',
+        ];
 
         $this->config = new Collection($config);
 
@@ -58,8 +76,12 @@ class Engine extends Collection
                 return $obj;
             }
         }
-        # set container
+
         $class = $this->config('classes.' . $method, null);
+        if (!$class) {
+            $class = $this->default_classes[$method] ?: null;
+        }
+
         if ($class) {
             #throw new \BadMethodCallException("$class");
             $class = '\\' . $class;
