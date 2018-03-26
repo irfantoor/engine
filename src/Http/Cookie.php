@@ -10,7 +10,7 @@ use IrfanTOOR\Collection;
 class Cookie
 {
     protected $name     = null;
-    protected $value    = [];
+    protected $value    = null;
     protected $domain   = null;
     protected $path     = null;
     protected $expires  = null;
@@ -66,10 +66,10 @@ class Cookie
             $expires = 1;
 
         $this->name     = $name;
-        $this->value    = json_encode($value);
+        $this->value    = $value;
         $this->expires  = $expires ?: time()+24*60*60;
         $this->path     = $path ?: '/';
-        $this->domain   = $domain ?: $_SERVER['HTTP_HOST'];
+        $this->domain   = $domain ?: $_SERVER['SERVER_NAME'];
         $this->secure   = $secure;
         $this->httponly = $httponly;
     }
@@ -91,7 +91,7 @@ class Cookie
      */
     public function getValue()
     {
-        return json_decode($this->value, 1);
+        return $this->value;
     }
 
     /**
@@ -137,7 +137,7 @@ class Cookie
      */
     public function withValue($value)
     {
-        $cookie = $this->_with('value', json_encode($value));
+        $cookie = $this->_with('value', $value);
         if ($value === null)
             $cookie = $cookie->withExpiry(1);
         return $cookie;
@@ -247,7 +247,7 @@ class Cookie
     {
         setcookie(
             $this->name,
-            $this->getValue(),
+            $this->value,
             $this->expires,
             $this->path,
             $this->domain,
