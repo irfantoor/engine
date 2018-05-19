@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+
+if (is_file('app/autoload.php')) {
+    require 'app/autoload.php';
+} else {
+    $path = dirname(__FILE__) . '/';
+    $pos = strpos($path, 'vendor/irfantoor');
+    if ($pos) {
+        $path = substr($path, 0, $pos);
+    }    
+    define('ROOT', $path);
+    require 'vendor/autoload.php';
+}
+
+use IrfanTOOR\Engine\Command\IE;
+
+$ie = new IE;
+$ie->run();

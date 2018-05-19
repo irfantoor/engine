@@ -27,18 +27,29 @@ class Cookie
      */
     public static function createFromArray(array $data, $options=[])
     {
-        $cookies = [];
+        $cookies  = [];
+        
+        # defaults
+        $expires  = null;
+        $path     = null;
+        $domain   = null;
+        $secure   = false;
+        $httponly = false;
+        
+        extract($options);
+        
         foreach($data as $k=>$v) {
             $cookies[] = new static(
                 $k,
                 $v,
-                ($options['expires']  ?: null),
-                ($options['path']     ?: null),
-                ($options['domain']   ?: null),
-                ($options['secure']   ?: false),
-                ($options['httponly'] ?: false)
+                $expires,
+                $path,
+                $domain,
+                $secure,
+                $httponly
             );
         }
+        
         return $cookies;
     }
 
@@ -65,11 +76,17 @@ class Cookie
         if ($value === null)
             $expires = 1;
 
+        if (!$domain) {
+            $domain = isset($_SERVER['SERVER_NAME']) 
+                        ? $_SERVER['SERVER_NAME'] 
+                        : 'localhost';
+        }
+        
         $this->name     = $name;
         $this->value    = $value;
         $this->expires  = $expires ?: time()+24*60*60;
         $this->path     = $path ?: '/';
-        $this->domain   = $domain ?: $_SERVER['SERVER_NAME'];
+        $this->domain   = $domain;
         $this->secure   = $secure;
         $this->httponly = $httponly;
     }

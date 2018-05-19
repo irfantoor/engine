@@ -2,30 +2,22 @@
 
 namespace IrfanTOOR;
 
-use IrfanTOOR\Collection;
+use Closure;
 use IrfanTOOR\Container;
 use IrfanTOOR\Debug;
-// use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Response;
-// use IrfanTOOR\Engine\Http\Uri;
-// use IrfanTOOR\Engine\Http\Stream;
-use IrfanTOOR\Engine\Router;
 
-class Engine extends Collection
+class Engine
 {
-    const VERSION = '1.0';
-
-    protected static $instance;
-    protected $initialized;
     protected $config;
     protected $container;
+    protected $events;
+    protected $middleware_stack = [];
+    protected $session;
     protected $default_classes;
 
     function __construct($config=[])
     {
-        static::$instance = $this;
-
         $this->default_classes = [
             'cookie'         => 'IrfanTOOR\Engine\Http\Cookie',
             'environment'    => 'IrfanTOOR\Engine\Http\Environment',
@@ -36,11 +28,16 @@ class Engine extends Collection
             'uploaded_file'  => 'IrfanTOOR\Engine\Http\UploadedFile',
             'uri'            => 'IrfanTOOR\Engine\Http\Uri',
 
+            'events'         => 'IrfanTOOR\Engine\Events',
             'router'         => 'IrfanTOOR\Engine\Router',
-            'session'        => 'App\Model\Session',
+
+            'session'        => 'IrfanTOOR\Engine\Session',
         ];
 
         $this->config = new Collection($config);
+
+        # Set default timezone
+        date_default_timezone_set($this->config("timezone", "Europe/Paris"));
 
         $dl = $this->config('debug.level', 0);
         if ($dl) {
@@ -51,11 +48,6 @@ class Engine extends Collection
 
         $this->data = $this->config('data', []);
         $this->container = new Container();
-    }
-
-    public function config($id, $default = null)
-    {
-        return $this->config->get($id, $default);
     }
 
     /**
@@ -83,9 +75,13 @@ class Engine extends Collection
         }
 
         if ($class) {
-            #throw new \BadMethodCallException("$class");
             $class = '\\' . $class;
-            $class = new $class;
+            if ($method === 'session') {
+                $class = new $class($this->serverrequest());
+            } else {
+                $class = new $class();
+            }
+            
             $this->container->set($method, $class);
             return $class;
         }
@@ -98,6 +94,44 @@ class Engine extends Collection
         $router = $this->router();
         $router->addRoute($method, $path, $handler);
     }
+    
+    public function config($id, $default = null)
+    {
+        return $this->config->get($id, $default);
+    }
+    
+    function register($event_id, Closure $event, $level = 10)
+    {
+        $events = $this->events();
+        $events->register($event_id, $event, $level);
+    }
+
+    function trigger($event_id)
+    {
+        $events = $this->events();
+        $events->trigger($event_id);
+    }
+
+    function redirectTo($url, $status = Response::STATUS_TEMPORARY_REDIRECT)
+    {
+        $response = new Response($status);
+        $response = $response->withStatus($status);
+        $response->withHeader('Location', $url);
+        $response->write(sprintf('<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="refresh" content="0;url=%1$s" />
+<title>Redirecting to %1$s</title>
+</head>
+<body>
+Redirecting to <a href="%1$s">%1$s</a>.
+</body>
+</html>', htmlspecialchars($url, ENT_QUOTES, 'UTF-8')));
+
+        $response->send();
+        exit;
+    }
 
     function run()
     {
@@ -109,7 +143,7 @@ class Engine extends Collection
         $basepath = rtrim(ltrim($path, '/'), '/');
         $args     = explode('/', htmlspecialchars($basepath));
 
-        // extract processed route
+        // extract processed route's $type and $handler
         extract(
             $router->process($request->getMethod(), $path)
         );
@@ -121,9 +155,11 @@ class Engine extends Collection
 
             case 'string':
                 if (($pos = strpos($handler, '@')) !== FALSE) {
+                    # e.g. process@App\Controller\Main
                     $method = substr($handler, 0, $pos);
                     $cname  = substr($handler, $pos + 1);
                 } else {
+                    # e.g. App\Controller\Blog
                     $method = 'defaultMethod';
                     $cname  = $handler;
                 }
@@ -132,6 +168,16 @@ class Engine extends Collection
                 if (!method_exists($class, $method))
                     $method  = 'defaultMethod';
 
+                $mw_list = $class->getMiddlewareList();
+                
+                # process middlewares
+                foreach($mw_list as $mw) {
+                    $mw_class = new $mw($class);
+                    $this->middleware_stack[] = $mw_class;
+                    $response = $mw_class->process($request, $response, $args);
+                }
+
+                # call the contrller method
                 $response = $class->$method($request, $response, $args);
                 break;
 
@@ -145,10 +191,13 @@ class Engine extends Collection
         $this->finalize($request, $response, $args)->send();
     }
 
-    function finalize($request, $response, $args)
-    {
-        # This function can be overriden in the extended classes
-        # to do some finalization like logging etc.
+    public function finalize($request, $response, $args) {
+        # finalize middlewares
+        while ($this->middleware_stack) {
+            $mw_class = array_pop($this->middleware_stack);
+            $response = $mw_class->finalize($request, $response, $args);
+        }
+
         return $response;
     }
 }

@@ -18,11 +18,16 @@ If this constant is defined as a non false value, you can avoid all of the
 validations, though certain constraints can not be eliminated, which are
 essential for the proper functioning of the underlying system.
 
+Now equiped with a console command ie, so that you can easily initialise
+a basic application framework, create controllers, models, or views etc.
+
 Note: This documentation is just to get you started, you are encouraged to study
 the code and the examples in the examples folder, which might help you get going
 , by adding, extending or even writing your own classes and/or frameworks.
 
-## Installation
+## Quick Start
+
+### 1. Installation
 
 Install the latest version with
 
@@ -30,7 +35,34 @@ Install the latest version with
 composer require irfantoor/engine
 ```
 
-Requires PHP 7.0 or newer.
+Note: Irfan's Engine requires PHP 7.0 or newer.
+
+
+### 2. Basic Initialisation
+
+Use the console command <strong>ie</strong> to create a basic app framework for 
+you. When Irfan's Engine is installed, it will create a link to a shell 
+command. Which can be used as follows to initialise the app.
+
+```sh
+$ ./ie app:init
+```
+
+### 3. Serve the app
+
+App can be tested on basic php server using the following command:
+
+```sh
+$ ./ie app:serve
+```
+
+Go to <a href="http://localhost:8000">http://localhost:8000</a> and voilà! your
+welcome app alive. You can start experimenting by changing or adding the routes,
+creating/modifying models, views, controllers etc.
+
+Dont forget the shell command `ie` can be a big help in creating the models with
+the associated databases, middlewares, controllers or views etc.
+
 
 ## Usage
 

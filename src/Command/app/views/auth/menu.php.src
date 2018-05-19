@@ -1,0 +1,17 @@
+<li class="nav-item <?php echo (defined('ADMIN_MENU')? 'active': ''); ?> dropdown">
+    <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Admin</a>
+
+    <div class="dropdown-menu dropdown-menu-right">
+        <a class="dropdown-item" href="/admin/profile"><i class="fa fa-list-alt"></i> Dashboard</a>
+
+        <div class="dropdown-divider"></div>
+
+        <a class="dropdown-item" href="/admin/profile"><i class="fa fa-user"></i> Profile</a>
+        <a class="dropdown-item" href="/admin/account"><i class="fa fa-file"></i> Account</a>
+        <a class="dropdown-item" href="/admin/config"><i class="fa fa-gears"></i> Configuration</a>
+
+        <div class="dropdown-divider"></div>
+
+        <a class="dropdown-item" href=/admin/logout><i class="fa fa-sign-out"></i> Logout</a>
+    </div>
+</li>

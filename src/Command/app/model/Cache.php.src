@@ -1,0 +1,51 @@
+<?php
+
+namespace IrfanTOOR\Engine\Model;
+
+class Cache extends Model
+{
+    function __construct($connection = [])
+    {
+        $table = isset($connection['table']) ? $connection['table'] : null;
+        if (!isset($connection['file'])) {
+            $connection['file'] = ROOT . 'storage/db/cache.sqlite';
+        }
+        
+        $this->schema = [
+            'id INTEGER PRIMARY KEY',
+
+            'key NOT NULL',
+            'value BLOB',
+            'ttl INTEGER DEFAULT 0',
+
+            'created_at INTEGER',
+        ];
+
+        $this->indecies = [
+            ['unique' => 'key'],
+            ['index'  => 'created_at'],
+        ];
+
+        parent::__construct($connection, $table);
+    }
+
+    function get($key)
+    {
+        $result = parent::get(
+            ['where' => 'key = :key', 'limit' => 1],
+            ['key' => $key]
+        );
+
+        $cached = $result[0] ?: null;
+        if (!$cached)
+            return null;
+
+        $ttl = $cached['ttl'];
+        if ($ttl) {
+            if (time() - $cached['created_at'] > $ttl) # expired
+                return null;
+        }
+
+        return $cached['value'];
+    }
+}

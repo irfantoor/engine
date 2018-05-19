@@ -17,10 +17,10 @@ $ie = new IrfanTOOR\Engine([
 	]
 ]);
 
-$ie->addRoute('GET', '/', function($request, $response) use($ie){
-	$env = $ie->container()['environment'];
+$ie->addRoute('GET', '/', function($request, $response, $args) use($ie) {
+// 	$env = $ie->environment();
 	ob_start();
-	IrfanTOOR\Engine\Debug::dump($env);
+	IrfanTOOR\Debug::dump($ie);
 	$contents = ob_get_clean();
 	$response->write($contents);
 	$response->write('Debug Level: ' . $ie->config('debug.level'));

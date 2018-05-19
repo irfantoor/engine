@@ -1,0 +1,18 @@
+<?php
+
+namespace App\Controller\Admin;
+
+use IrfanTOOR\Engine\Controller;
+
+class DashboardController extends Controller
+{
+    public function __construct($args)
+    {
+        parent::__construct($args);
+    }
+
+    public function process($request, $response, $args)
+    {
+        return $this->show($response, 'admin/dashboard', []);
+    }
+}

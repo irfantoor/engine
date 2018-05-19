@@ -24,7 +24,7 @@ namespace IrfanTOOR\Engine;
  *
  *      <?php
  *      // instantiate the loader
- *      $loader = new \Example\Psr4AutoloaderClass;
+ *      $loader = new IrfanTOOR\Engine\Autoloader;
  *
  *      // register the autoloader
  *      $loader->register();
