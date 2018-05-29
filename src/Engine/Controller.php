@@ -2,24 +2,30 @@
 
 namespace IrfanTOOR\Engine;
 
+use IrfanTOOR\Collection;
 use IrfanTOOR\Debug;
 use IrfanTOOR\Engine\Session;
 use IrfanTOOR\Engine\View;
 
-class Controller
+class Controller extends Collection
 {
-    protected $engine;
     protected $middlewares;
 
     public function __construct($engine)
     {
-        $this->engine = $engine;
+        $session = $engine->session();
+        $logged = $session->has('logged');
+        parent::__construct([
+            'engine' => $engine,
+            'logged' => $logged,
+            'user'   => $session->get('user', ''),
+        ]);
     }
 
     function __call($func, array $args)
     {
         try {
-            $result = call_user_func_array([$this->engine, $func], $args);
+            $result = call_user_func_array([$this->engine(), $func], $args);
             return $result;
         } catch(Exception $e) {
         }
@@ -33,13 +39,17 @@ class Controller
 
     function engine()
     {
-        return $this->engine;
+        return $this->get('engine');
     }
 
     function isLogged()
     {
-        $session = $this->session();
-        return $session->has('logged');
+        return $this->get('logged');
+    }
+    
+    function loggedUser()
+    {
+        return $this->get('user');
     }
 
     function addMiddleware($middleware)
@@ -52,16 +62,12 @@ class Controller
         return $this->middlewares;
     }
 
-    public function show($response, $tplt, $data = [])
+    public function show($response, $tplt)
     {
-        # received data
-        $rdata = $data;
-
         # merge with the config data
         $data = $this->config('data', []);
-        $data['engine'] = $this->engine;
         
-        foreach($rdata as $k=>$v) {
+        foreach($this->toArray() as $k=>$v) {
             $vv = $data[$k] ?: null;
             if (is_array($vv)) {
                 $data[$k] = array_merge($vv, $v);

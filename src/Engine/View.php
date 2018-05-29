@@ -24,9 +24,10 @@ class View
         throw new Exception("Method: $func, does not exist!", 1);
     }
     
-    function process($tplt, $data = [])
-    {        
-        $tplt = ROOT . 'app/view/' . $tplt . '.php';
+    function process($tplt)
+    {
+        $data = $this->controller->toArray();
+        $tplt = ROOT . 'app/views/' . $tplt . '.php';
         
         if (!is_file($tplt))
             throw new Exception("tplt: {$tplt}, not found");
