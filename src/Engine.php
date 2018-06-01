@@ -3,6 +3,7 @@
 namespace IrfanTOOR;
 
 use Closure;
+use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
 use IrfanTOOR\Debug;
 use IrfanTOOR\Engine\Http\Response;
@@ -112,11 +113,10 @@ class Engine
         $events->trigger($event_id);
     }
 
-    function redirectTo($url, $status = Response::STATUS_TEMPORARY_REDIRECT)
+    function redirectTo($url, $status = 307)
     {
-        $response = new Response($status);
-        $response = $response->withStatus($status);
-        $response->withHeader('Location', $url);
+        $response = new Response(['status' => $status]);
+        $response->get('headers')->set('Location', $url);
         $response->write(sprintf('<!DOCTYPE html>
 <html>
 <head>
@@ -138,14 +138,14 @@ Redirecting to <a href="%1$s">%1$s</a>.
         $request  = $this->serverrequest();
         $response = $this->response();
         $router   = $this->router();
-        $uri      = $request->getUri();
-        $path     = $uri->getPath();
-        $basepath = rtrim(ltrim($path, '/'), '/');
+        $uri      = $request->get('uri');
+        $path     = $uri->get('path');
+        $basepath = $uri->get('basepath');
         $args     = explode('/', htmlspecialchars($basepath));
 
         // extract processed route's $type and $handler
         extract(
-            $router->process($request->getMethod(), $path)
+            $router->process($request->get('method'), $path)
         );
 
         switch ($type) {
@@ -182,10 +182,8 @@ Redirecting to <a href="%1$s">%1$s</a>.
                 break;
 
             default:
-                $stream = $response->getBody();
-                $stream->write('no route defined!');
-                $response = $response
-                    ->withStatus(Response::STATUS_NOT_FOUND);
+                $response->set('status', 404);
+                $response->write('no route defined!');
         }
 
         $this->finalize($request, $response, $args)->send();

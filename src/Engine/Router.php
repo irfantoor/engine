@@ -69,9 +69,6 @@ class Router extends Collection
                         $this->addRoute($am, $patern, $handler);
                 }
             } else {
-                # todo -- find some sane way of calling
-                $method = Request::validate('method', $method);
-
                 $def = $this->get($method);
                 if (!is_array($def) && $this->strict_mode)
                     throw new InvalidArgumentException('Not an allowed method: ' . $method);
@@ -87,9 +84,6 @@ class Router extends Collection
 
     public function process($method, $path='/')
     {
-        # todo -- use a sane way to call
-        $method = Request::validate('method', $method);
-
         $path = ltrim(rtrim($path, '/'), '/') ?: '/';
         $found = false;
         $routes = $this->get($method, []);

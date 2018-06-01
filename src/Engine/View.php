@@ -27,7 +27,7 @@ class View
     function process($tplt)
     {
         $data = $this->controller->toArray();
-        $tplt = ROOT . 'app/views/' . $tplt . '.php';
+        $tplt = ROOT . 'app/Views/' . $tplt . '.php';
         
         if (!is_file($tplt))
             throw new Exception("tplt: {$tplt}, not found");

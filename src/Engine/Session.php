@@ -4,9 +4,8 @@ namespace IrfanTOOR\Engine;
 
 use App\Model\Sessions;
 use IrfanTOOR\Collection;
-use IrfanTOOR\Engine\Http\Cookie;
-
 use IrfanTOOR\Debug;
+use IrfanTOOR\Engine\Http\Cookie;
 
 class Session extends Collection
 {
@@ -16,30 +15,19 @@ class Session extends Collection
 
     function __construct($request)
     {
-        $server  = $request->getServerParams();
-        $cookies = $request->getCookieParams();        
-        $sid     = isset($cookies['sid']) ? $cookies['sid'] : null;
+        $server  = $request->get('server');
+        $sid     = $request->get('cookie')['SID'];
 
         $this->sessions = new Sessions;
+
         if (!$sid)
         {
-            $sid = md5(
-                $server['REMOTE_ADDR'] . 
-                $server['HTTP_USER_AGENT'] . 
-                time()
-            );
-            
-            $cookies = Cookie::createFromArray(
-                [
-                    'sid' => $sid,
-                ]
-            );
-            
-            if (!headers_sent()) {
-                foreach($cookies as $cookie) {
-                    $cookie->send();
-                }
-            }
+            $sid = md5($server['REMOTE_ADDR'] . $server['HTTP_USER_AGENT'] . time());
+            $c = new Cookie([
+                'name'  => 'SID',
+                'value' => $sid,
+            ]);
+            $c->send();
 
             $this->sessions->insertOrUpdate(
                 [
@@ -51,8 +39,12 @@ class Session extends Collection
         }
 
         $session = $this->sessions->getFirst(
-            ['where' => 'sid = :sid'],
-            ['sid' => $sid]
+            [
+                'where' => 'sid = :sid'
+            ],
+            [
+                'sid' => $sid,
+            ]
         );
 
         $value['sid'] = $sid;
@@ -85,8 +77,12 @@ class Session extends Collection
     {
         $sid = $this->get('sid');
         $this->sessions->remove(
-            ['where' => 'sid = :sid'],
-            ['sid' => $sid]
+            [
+                'where' => 'sid = :sid'
+            ],
+            [
+                'sid' => $sid,
+            ]
         );
     }
 

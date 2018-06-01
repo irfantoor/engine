@@ -10,7 +10,6 @@ class Middleware
     function __construct($controller)
     {
         $this->controller = $controller;
-        # $this->engine = $controller->engine();
     }
 
     function __call($func, array $args)

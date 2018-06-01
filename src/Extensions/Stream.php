@@ -2,7 +2,6 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use GuzzleHttp\Stream\Stream as GStream;
 use IrfanTOOR\Engine\Exception;
 use Psr\Http\Message\StreamInterface;
 
@@ -13,56 +12,125 @@ use Psr\Http\Message\StreamInterface;
  * a wrapper around the most common operations, including serialization of
  * the entire stream to a string.
  */
-class Stream extends GStream implements StreamInterface
+class Stream implements StreamInterface
 {
-
-    public static function createFromString($contents, $options = [])
+//     protected $filename;
+    protected $fp;
+    
+    function __construct()
     {
-        $mode = isset($options['metadata']['mode']) ? $options['metadata']['mode'] : 'r+';
-        $stream = fopen('php://temp', $mode);
-        if ($contents !== '') {
-            fwrite($stream, $contents);
-            fseek($stream, 0);
-        }
-        return new static($stream, $options);
+        $this->fp = tmpfile();
     }
-
-    public static function createFromFile($file, $options = [])
+    
+    /**
+     * Reads all data from the stream into a string, from the beginning to end.
+     *
+     * This method MUST attempt to seek to the beginning of the stream before
+     * reading data and read the stream until the end is reached.
+     *
+     * Warning: This could attempt to load a large amount of data into memory.
+     *
+     * This method MUST NOT raise an exception in order to conform with PHP's
+     * string casting operations.
+     *
+     * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
+     * @return string
+     */
+    public function __toString()
     {
-        $mode = isset($options['metadata']['mode']) ? $options['metadata']['mode'] : 'r+';
-        if (!file_exists($file)) {
-            throw new Exception('file: '. $file .', not found');
-        }
-        
-        $stream = fopen($file, $mode);
-        if (is_resource($stream))
-            return new static($stream, $options);
+        $this->rewind();
+        return $this->getContents();
     }
 
     /**
-     * This constructor accepts an associative array of options.
+     * Closes the stream and any underlying resources.
      *
-     * - size: (int) If a read stream would otherwise have an indeterminate
-     *   size, but the size is known due to foreknownledge, then you can
-     *   provide that size, in bytes.
-     * - metadata: (array) Any additional metadata to return when the metadata
-     *   of the stream is accessed.
-     *
-     * @param resource $stream  Stream resource to wrap.
-     * @param array    $options Associative array of options.
-     *
-     * @throws \InvalidArgumentException if the stream is not a stream resource
+     * @return void
      */
-    public function __construct($stream, $options = null)
+    public function close()
     {
-        if (null === $options)
-            $options = [
-                'metadata' => [
-                    'mode' => 'r+'
-                ]
-            ];
+        if ($this->fp)
+            fclose($this->fp);
+    }
 
-        parent::__construct($stream, $options);
+    /**
+     * Separates any underlying resources from the stream.
+     *
+     * After the stream has been detached, the stream is in an unusable state.
+     *
+     * @return resource|null Underlying PHP stream, if any
+     */
+    public function detach()
+    {
+        # todo
+    }
+
+    /**
+     * Get the size of the stream if known.
+     *
+     * @return int|null Returns the size in bytes if known, or null if unknown.
+     */
+    public function getSize()
+    {
+        return $this->getMetaData('size');
+    }
+
+    /**
+     * Returns the current position of the file read/write pointer
+     *
+     * @return int Position of the file pointer
+     * @throws \RuntimeException on error.
+     */
+    public function tell()
+    {
+        return ftell($this->fp);
+    }
+
+    /**
+     * Returns true if the stream is at the end of the stream.
+     *
+     * @return bool
+     */
+    public function eof()
+    {
+        if ($this->fp)
+            return feof($this->fp);
+            
+        return true;
+    }
+
+    /**
+     * Returns whether or not the stream is seekable.
+     *
+     * @return bool
+     */
+    public function isSeekable()
+    {
+        if ($this->fp) {
+            fseek($this->fp, 1, SEEK_CUR);
+            if (fseek($this->fp, -1, SEEK_CUR) === 0)
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Seek to a position in the stream.
+     *
+     * @link http://www.php.net/manual/en/function.fseek.php
+     * @param int $offset Stream offset
+     * @param int $whence Specifies how the cursor position will be calculated
+     *     based on the seek offset. Valid values are identical to the built-in
+     *     PHP $whence values for `fseek()`.  SEEK_SET: Set position equal to
+     *     offset bytes SEEK_CUR: Set position to current location plus offset
+     *     SEEK_END: Set position to end-of-stream plus offset.
+     * @throws \RuntimeException on failure.
+     */
+    public function seek($offset, $whence = SEEK_SET)
+    {
+        if (fseek($this->fp, $offset, $whence) !== 0) {
+            throw new Exception('seek failure');
+        }
     }
 
     /**
@@ -77,9 +145,100 @@ class Stream extends GStream implements StreamInterface
      */
     public function rewind()
     {
-        if (!$this->isSeekable())
-            throw new Exception('this stream is not seekable');
+        if (!rewind($this->fp)) {
+            throw new Exception('rewind failure');
+        }
+    }
 
-        $this->seek(0);
+    /**
+     * Returns whether or not the stream is writable.
+     *
+     * @return bool
+     */
+    public function isWritable()
+    {
+        # todo
+        # return is_writable($this->filename);
+    }
+
+    /**
+     * Write data to the stream.
+     *
+     * @param string $string The string that is to be written.
+     * @return int Returns the number of bytes written to the stream.
+     * @throws \RuntimeException on failure.
+     */
+    public function write($string)
+    {
+        fwrite($this->fp, $string);
+    }
+
+    /**
+     * Returns whether or not the stream is readable.
+     *
+     * @return bool
+     */
+    public function isReadable()
+    {
+        # todo
+        # return is_readable($this->filename);
+    }
+
+    /**
+     * Read data from the stream.
+     *
+     * @param int $length Read up to $length bytes from the object and return
+     *     them. Fewer than $length bytes may be returned if underlying stream
+     *     call returns fewer bytes.
+     * @return string Returns the data read from the stream, or an empty string
+     *     if no bytes are available.
+     * @throws \RuntimeException if an error occurs.
+     */
+    public function read($length)
+    {
+        return fread($this->fp, $length);
+    }
+
+    /**
+     * Returns the remaining contents in a string
+     *
+     * @return string
+     * @throws \RuntimeException if unable to read or an error occurs while
+     *     reading.
+     */
+    public function getContents()
+    {
+        $contents = '';
+        while (!$this->eof()) {
+            $contents .= stream_get_contents($stream, 8192);
+        }
+        return $contents;
+    }
+
+    /**
+     * Get stream metadata as an associative array or retrieve a specific key.
+     *
+     * The keys returned are identical to the keys returned from PHP's
+     * stream_get_meta_data() function.
+     *
+     * @link http://php.net/manual/en/function.stream-get-meta-data.php
+     * @param string $key Specific metadata to retrieve.
+     * @return array|mixed|null Returns an associative array if no key is
+     *     provided. Returns a specific key value if a key is provided and the
+     *     value is found, or null if the key is not found.
+     */
+    public function getMetadata($key = null)
+    {
+        if (!$this->fp)
+            return null;
+            
+        $fstat = fstat($this->fp);
+        $fstat = array_slice($fstat, 13);
+        
+        if ($key) {
+            return isset($fstat[$key]) ? $fstat[$key] : null;
+        }
+        
+        return $fstat;
     }
 }

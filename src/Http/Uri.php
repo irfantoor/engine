@@ -3,6 +3,7 @@
 namespace IrfanTOOR\Engine\Http;
 
 use InvalidArgumentException;
+use IrfanTOOR\Collection;
 use IrfanTOOR\Engine\Http\Environment;
 use Psr\Http\Message\UriInterface;
 
@@ -26,7 +27,7 @@ use Psr\Http\Message\UriInterface;
  *
  * @link http://tools.ietf.org/html/rfc3986 (the URI specification)
  */
-Class Uri implements UriInterface
+class Uri extends Collection
 {
 
     protected static $default_ports = [
@@ -35,550 +36,110 @@ Class Uri implements UriInterface
         'https' => 443,
     ];
 
-    protected static $regex = [
-        'userinfo'  =>  '/(?:[^a-zA-Z0-9_\-\.~!\$&\'\(\)\*\+,;=]+|%(?![A-Fa-f0-9]{2}))/u',
-        'path'      => '/(?:[^a-zA-Z0-9_\-\.~:@&=\+\$,\/;%]+|%(?![A-Fa-f0-9]{2}))/',
-        'query'     => '/(?:[^a-zA-Z0-9_\-\.~!\$&\'\(\)\*\+,;=%:@\/\?]+|%(?![A-Fa-f0-9]{2}))/',
-    ];
-
-    protected $scheme = '';
-    protected $user = '';
-    protected $pass = '';
-    protected $host = '';
-    protected $port = null;
-    protected $path = '';
-    protected $query = '';
-    protected $fragment = '';
-
-    protected $userinfo = '';
-    protected $authority = '';
-    protected $basepath = '';
-
-    public static function createfromEnvironment($env = [])
+//     protected static $regex = [
+//         'userinfo'  =>  '/(?:[^a-zA-Z0-9_\-\.~!\$&\'\(\)\*\+,;=]+|%(?![A-Fa-f0-9]{2}))/u',
+//         'path'      => '/(?:[^a-zA-Z0-9_\-\.~:@&=\+\$,\/;%]+|%(?![A-Fa-f0-9]{2}))/',
+//         'query'     => '/(?:[^a-zA-Z0-9_\-\.~!\$&\'\(\)\*\+,;=%:@\/\?]+|%(?![A-Fa-f0-9]{2}))/',
+//     ];
+    
+    function __construct($uri = null)
     {
-        if (!($env instanceof Environment)) {
-            $env = new Environment($env);
-        }
-
+        $env = new Environment();
         $host = $env['HTTP_HOST'] ?: ($env['SERVER_NAME'] ?: 'localhost');
-        $protocol = $env['SERVER_PROTOCOL'] ?: 'HTTP/1.1';
-        $pos = strpos($protocol, '/');
-        $ver = substr($protocol, $pos + 1);
-        $url = ($env['REQUEST_SCHEME'] ?: 'http') .
-                '://' .
-                $host .
-                ($env['REQUEST_URI'] ?: '/');
-
-        return new static($url);
-    }
-
-    public function __construct($url = null)
-    {
-        if ($url) {
-            if (!is_string($url) && !method_exists($url, '__toString')) {
-                throw new InvalidArgumentException('Uri must be a string');
-            }
-
-            $parsed = parse_url($url);
-            if (!$parsed)
-                throw new InvalidArgumentException('Invalid url');
-
-            foreach($parsed as $k=>$v)
-                $this->$k = $this->validate($k, $v);
-
-            $this->_process();
+        $host = explode(':', $host)[0];
+        extract([
+            'scheme'   => $env['REQUEST_SCHEME'] ?: 'http',
+            'user'     => null,
+            'pass'     => null,
+            'host'     => $host,
+            'port'     => $env['SERVER_PORT'],
+            'path'     => '',
+            'query'    => '',
+            'fragment' => '',
+            
+            'user_info' => '',
+            'authority' => '',
+            'base_path' => '',
+        ]);
+        
+        if (!$uri) {
+            $uri =  $scheme . '://' . $host . ':' . $port . ($env['REQUEST_URI'] ?: '/');
         }
-    }
+        
+        $parsed = parse_url($uri);
+        if (!$parsed)
+            $parsed = [];
 
-    function validate($name, $value)
-    {
-        if (defined('HACKER_MODE') && HACKER_MODE !== false)
-            return $value;
-
-        $$name = $value;
-
-        switch($name) {
-            case 'scheme':
-                if (
-                    !is_string($scheme) &&
-                    !method_exists($scheme, '__toString')
-                ) {
-                    throw new InvalidArgumentException(
-                        'scheme must be a string'
-                    );
-                }
-
-                $scheme = str_replace('://', '', strtolower((string)$scheme));
-                if (!in_array($scheme, array_keys(self::$default_ports)))
-                    throw new InvalidArgumentException(
-                        'Invalid scheme: ' . $scheme
-                    );
-
-                return $scheme;
-
-            case 'port':
-                if (
-                    !is_null($port) &&
-                    (!is_integer($port) || ($port < 1 || $port > 65535))
-                ) {
-                    throw new InvalidArgumentException(
-                        'Uri port must be null or an integer between
-                        1 and 65535 (inclusive)'
-                     );
-                }
-                return $port;
-
-            case 'fragment':
-                if (
-                    !is_string($fragment) &&
-                    !method_exists($fragment, '__toString')
-                ) {
-                    throw new InvalidArgumentException(
-                        'Uri fragment must be a string'
-                    );
-                }
-                return ltrim($fragment, '#');
-
-            case 'user':
-            case 'pass':
-            case 'userinfo':
-            case 'path':
-            case 'query':
-                $rindex = ($name=='user' || $name == 'pass') ? 'userinfo' : $name;
-                $r = self::$regex[$rindex];
-                $value = preg_replace_callback(
-                    $r,
-                    function ($match) {
-                        return rawurlencode($match[0]);
-                    },
-                    $value
-                );
-                return $value;
-
-            default:
-                return $value;
+        extract($parsed);
+        
+        $uri = [
+            'scheme'   => $scheme,
+            'user'     => $user,
+            'pass'     => $pass,
+            'host'     => $host,
+            'port'     => $port,
+            'path'     => $path,
+            'query'    => $query,
+            'fragment' => $fragment,
+        ];
+        
+        foreach($uri as $k=>$v) {
+            $this->setItem($k, $v);
         }
+        
+        $this->_process();
     }
-
-    /*
-     * Process the contents after a call of type withXxxx e.g. withPort(8080)
-     */
-    public function _process() {
-        $this->userinfo  = $this->user . (
-            ($this->user && $this->pass) ? ':' . $this->pass : ''
-        );
-
-        if ($this->port) {
-            $default_port = self::$default_ports[$this->scheme] ?: null;
-            if ($default_port === $this->port) {
-                $this->port = null;
+    
+    private function _process()
+    {
+        extract($this->toArray());
+        
+        $user_info = '';
+        if ($user && $pass) {
+            $user_info = $user . ':' . $pass;
+        }
+        $this->setItem('user_info', $user_info);
+        
+        if ($port) {
+            $default_port = self::$default_ports[$scheme] ?: null;
+            if ($default_port === $port) {
+                $port = null;
             }
         }
-
-        $this->authority =
-            ($this->userinfo ? $this->userinfo . '@' : '') .
-            $this->host .
-            ($this->port ? ':' . $this->port : '');
-
-        $this->basepath  = rtrim(ltrim($this->path, '/'), '/');
+        $this->setItem('port', $port);
+        
+        $authority = 
+            ($user_info ?  $user_info . '@' : '') .
+            $host . 
+            (isset($port) ? ':' . $port : '');
+        
+        $this->setItem('authority', $authority);
+        $this->setItem('basepath', rtrim(ltrim($path, '/'), '/'));
     }
-
-    /**
-     * Retrieve the scheme component of the URI.
-     *
-     * If no scheme is present, this method MUST return an empty string.
-     *
-     * The value returned MUST be normalized to lowercase, per RFC 3986
-     * Section 3.1.
-     *
-     * The trailing ":" character is not part of the scheme and MUST NOT be
-     * added.
-     *
-     * @see https://tools.ietf.org/html/rfc3986#section-3.1
-     * @return string The URI scheme.
-     */
-    public function getScheme()
+    
+    function set($k, $v = null)
     {
-        return $this->scheme;
+        parent::set($k, $v);
+        $this->_process();
     }
-
-    /**
-     * Retrieve the authority component of the URI.
-     *
-     * If no authority information is present, this method MUST return an empty
-     * string.
-     *
-     * The authority syntax of the URI is:
-     *
-     * <pre>
-     * [user-info@]host[:port]
-     * </pre>
-     *
-     * If the port component is not set or is the standard port for the current
-     * scheme, it SHOULD NOT be included.
-     *
-     * @see https://tools.ietf.org/html/rfc3986#section-3.2
-     * @return string The URI authority, in "[user-info@]host[:port]" format.
-     */
-    public function getAuthority()
-    {
-        return $this->authority;
-    }
-
-    /**
-     * Retrieve the user information component of the URI.
-     *
-     * If no user information is present, this method MUST return an empty
-     * string.
-     *
-     * If a user is present in the URI, this will return that value;
-     * additionally, if the password is also present, it will be appended to the
-     * user value, with a colon (":") separating the values.
-     *
-     * The trailing "@" character is not part of the user information and MUST
-     * NOT be added.
-     *
-     * @return string The URI user information, in "username[:password]" format.
-     */
-    public function getUserInfo()
-    {
-        return $this->userinfo;
-    }
-
-    /**
-     * Retrieve the host component of the URI.
-     *
-     * If no host is present, this method MUST return an empty string.
-     *
-     * The value returned MUST be normalized to lowercase, per RFC 3986
-     * Section 3.2.2.
-     *
-     * @see http://tools.ietf.org/html/rfc3986#section-3.2.2
-     * @return string The URI host.
-     */
-    public function getHost()
-    {
-        return $this->host;
-    }
-
-    /**
-     * Retrieve the port component of the URI.
-     *
-     * If a port is present, and it is non-standard for the current scheme,
-     * this method MUST return it as an integer. If the port is the standard port
-     * used with the current scheme, this method SHOULD return null.
-     *
-     * If no port is present, and no scheme is present, this method MUST return
-     * a null value.
-     *
-     * If no port is present, but a scheme is present, this method MAY return
-     * the standard port for that scheme, but SHOULD return null.
-     *
-     * @return null|int The URI port.
-     */
-    public function getPort()
-    {
-        return $this->port;
-    }
-
-    /**
-     * Retrieve the path component of the URI.
-     *
-     * The path can either be empty or absolute (starting with a slash) or
-     * rootless (not starting with a slash). Implementations MUST support all
-     * three syntaxes.
-     *
-     * Normally, the empty path "" and absolute path "/" are considered equal as
-     * defined in RFC 7230 Section 2.7.3. But this method MUST NOT automatically
-     * do this normalization because in contexts with a trimmed base path, e.g.
-     * the front controller, this difference becomes significant. It's the task
-     * of the user to handle both "" and "/".
-     *
-     * The value returned MUST be percent-encoded, but MUST NOT double-encode
-     * any characters. To determine what characters to encode, please refer to
-     * RFC 3986, Sections 2 and 3.3.
-     *
-     * As an example, if the value should include a slash ("/") not intended as
-     * delimiter between path segments, that value MUST be passed in encoded
-     * form (e.g., "%2F") to the instance.
-     *
-     * @see https://tools.ietf.org/html/rfc3986#section-2
-     * @see https://tools.ietf.org/html/rfc3986#section-3.3
-     * @return string The URI path.
-     */
-    public function getPath()
-    {
-        return $this->path;
-    }
-
-    /**
-     * Retrieve the query string of the URI.
-     *
-     * If no query string is present, this method MUST return an empty string.
-     *
-     * The leading "?" character is not part of the query and MUST NOT be
-     * added.
-     *
-     * The value returned MUST be percent-encoded, but MUST NOT double-encode
-     * any characters. To determine what characters to encode, please refer to
-     * RFC 3986, Sections 2 and 3.4.
-     *
-     * As an example, if a value in a key/value pair of the query string should
-     * include an ampersand ("&") not intended as a delimiter between values,
-     * that value MUST be passed in encoded form (e.g., "%26") to the instance.
-     *
-     * @see https://tools.ietf.org/html/rfc3986#section-2
-     * @see https://tools.ietf.org/html/rfc3986#section-3.4
-     * @return string The URI query string.
-     */
-    public function getQuery()
-    {
-        return $this->query;
-    }
-
-    /**
-     * Retrieve the fragment component of the URI.
-     *
-     * If no fragment is present, this method MUST return an empty string.
-     *
-     * The leading "#" character is not part of the fragment and MUST NOT be
-     * added.
-     *
-     * The value returned MUST be percent-encoded, but MUST NOT double-encode
-     * any characters. To determine what characters to encode, please refer to
-     * RFC 3986, Sections 2 and 3.5.
-     *
-     * @see https://tools.ietf.org/html/rfc3986#section-2
-     * @see https://tools.ietf.org/html/rfc3986#section-3.5
-     * @return string The URI fragment.
-     */
-    public function getFragment()
-    {
-        return $this->fragment;
-    }
-
-    /**
-     * replaces the contents of a key with a value in a cloned version if the
-     * need be.
-     *
-     * @param string $key
-     * @param array  $args
-     *
-     * @return Uri Either this instance if not changed or a clone with the
-     *             requested change
-     */
-    private function _with($key, $value)
-    {
-        if ($key == 'userinfo')
-        {
-            $user = $this->validate('userinfo', $value[0]);
-            $pass = $this->validate('userinfo', $value[1]);
-            if ($user === $this->user && $pass === $this->pass)
-                return $this;
-        } else {
-            $value = $this->validate($key, $value);
-            if ($value === $this->$key)
-                return $this;
-        }
-
-        $clone = clone $this;
-
-        if ($key == 'userinfo') {
-            $clone->user = $user;
-            $clone->pass = $pass;
-        } else {
-            $clone->$key = $value;
-        }
-
-        $clone->_process();
-        return $clone;
-    }
-
-    /**
-     * Return an instance with the specified scheme.
-     *
-     * This method MUST retain the state of the current instance, and return
-     * an instance that contains the specified scheme.
-     *
-     * Implementations MUST support the schemes "http" and "https" case
-     * insensitively, and MAY accommodate other schemes if required.
-     *
-     * An empty scheme is equivalent to removing the scheme.
-     *
-     * @param string $scheme The scheme to use with the new instance.
-     * @return static A new instance with the specified scheme.
-     * @throws \InvalidArgumentException for invalid or unsupported schemes.
-     */
-    public function withScheme($scheme)
-    {
-        return $this->_with('scheme', $scheme);
-    }
-
-    /**
-     * Return an instance with the specified user information.
-     *
-     * This method MUST retain the state of the current instance, and return
-     * an instance that contains the specified user information.
-     *
-     * Password is optional, but the user information MUST include the
-     * user; an empty string for the user is equivalent to removing user
-     * information.
-     *
-     * @param string $user The user name to use for authority.
-     * @param null|string $password The password associated with $user.
-     * @return static A new instance with the specified user information.
-     */
-    public function withUserInfo($user, $password = null)
-    {
-        return $this->_with('userinfo', [$user, $password]);
-    }
-
-    /**
-     * Return an instance with the specified host.
-     *
-     * This method MUST retain the state of the current instance, and return
-     * an instance that contains the specified host.
-     *
-     * An empty host value is equivalent to removing the host.
-     *
-     * @param string $host The hostname to use with the new instance.
-     * @return static A new instance with the specified host.
-     * @throws \InvalidArgumentException for invalid hostnames.
-     */
-    public function withHost($host)
-    {
-        return $this->_with('host', $host);
-    }
-
-    /**
-     * Return an instance with the specified port.
-     *
-     * This method MUST retain the state of the current instance, and return
-     * an instance that contains the specified port.
-     *
-     * Implementations MUST raise an exception for ports outside the
-     * established TCP and UDP port ranges.
-     *
-     * A null value provided for the port is equivalent to removing the port
-     * information.
-     *
-     * @param null|int $port The port to use with the new instance; a null value
-     *     removes the port information.
-     * @return static A new instance with the specified port.
-     * @throws \InvalidArgumentException for invalid ports.
-     */
-    public function withPort($port)
-    {
-        return $this->_with('port', $port);
-    }
-
-    /**
-     * Return an instance with the specified path.
-     *
-     * This method MUST retain the state of the current instance, and return
-     * an instance that contains the specified path.
-     *
-     * The path can either be empty or absolute (starting with a slash) or
-     * rootless (not starting with a slash). Implementations MUST support all
-     * three syntaxes.
-     *
-     * If the path is intended to be domain-relative rather than path relative then
-     * it must begin with a slash ("/"). Paths not starting with a slash ("/")
-     * are assumed to be relative to some base path known to the application or
-     * consumer.
-     *
-     * Users can provide both encoded and decoded path characters.
-     * Implementations ensure the correct encoding as outlined in getPath().
-     *
-     * @param string $path The path to use with the new instance.
-     * @return static A new instance with the specified path.
-     * @throws \InvalidArgumentException for invalid paths.
-     */
-    public function withPath($path)
-    {
-        return $this->_with('path', $path);
-    }
-
-    /**
-     * Return an instance with the specified query string.
-     *
-     * This method MUST retain the state of the current instance, and return
-     * an instance that contains the specified query string.
-     *
-     * Users can provide both encoded and decoded query characters.
-     * Implementations ensure the correct encoding as outlined in getQuery().
-     *
-     * An empty query string value is equivalent to removing the query string.
-     *
-     * @param string $query The query string to use with the new instance.
-     * @return static A new instance with the specified query string.
-     * @throws \InvalidArgumentException for invalid query strings.
-     */
-    public function withQuery($query)
-    {
-        return $this->_with('query', $query);
-    }
-
-    /**
-     * Return an instance with the specified URI fragment.
-     *
-     * This method MUST retain the state of the current instance, and return
-     * an instance that contains the specified URI fragment.
-     *
-     * Users can provide both encoded and decoded fragment characters.
-     * Implementations ensure the correct encoding as outlined in getFragment().
-     *
-     * An empty fragment value is equivalent to removing the fragment.
-     *
-     * @param string $fragment The fragment to use with the new instance.
-     * @return static A new instance with the specified fragment.
-     */
-    public function withFragment($fragment)
-    {
-        return $this->_with('fragment', $fragment);
-    }
-
-    /**
-     * Return the string representation as a URI reference.
-     *
-     * Depending on which components of the URI are present, the resulting
-     * string is either a full URI or relative reference according to RFC 3986,
-     * Section 4.1. The method concatenates the various components of the URI,
-     * using the appropriate delimiters:
-     *
-     * - If a scheme is present, it MUST be suffixed by ":".
-     * - If an authority is present, it MUST be prefixed by "//".
-     * - The path can be concatenated without delimiters. But there are two
-     *   cases where the path has to be adjusted to make the URI reference
-     *   valid as PHP does not allow to throw an exception in __toString():
-     *     - If the path is rootless and an authority is present, the path MUST
-     *       be prefixed by "/".
-     *     - If the path is starting with more than one "/" and no authority is
-     *       present, the starting slashes MUST be reduced to one.
-     * - If a query is present, it MUST be prefixed by "?".
-     * - If a fragment is present, it MUST be prefixed by "#".
-     *
-     * @see http://tools.ietf.org/html/rfc3986#section-4.1
-     * @return string
-     */
-    public function __toString()
+    
+    function __toString()
     {
         $url = '';
+        extract($this->toArray());
 
-        $url = $this->scheme ? $this->scheme . ':' : '';
-        $url .= $this->authority ? ($this->scheme ? '//' : '') . $this->authority : '';
-
-        $path = $this->path;
-        if ($this->authority && ($path['0'] !== '/'))
+        $url = $scheme ? $scheme . '://' : '';
+        $url .= $authority;
+        if ($authority && ($path['0'] !== '/'))
              $path = '/' . $path;
 
-        if (!$this->authority && ($path['0'] === '/'))
+        if (!$authority && ($path['0'] === '/'))
             $path = '/' . ltrim($path, '/');
 
         $url .= $path;
-        $url .= $this->query ? '?' . $this->query : '';
-        $url .= $this->fragment ? '#' . $this->fragment : '';
+        $url .= $query ? '?' . $query : '';
+        $url .= $fragment ? '#' . $fragment : '';
 
         return $url;
-    }
+    }    
 }

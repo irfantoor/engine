@@ -2,7 +2,7 @@
 
 namespace IrfanTOOR\Engine;
 
-class FileLogger
+class Logger
 {
     protected $file;
 
@@ -14,8 +14,9 @@ class FileLogger
     function log($message, $level = 0)
     {
         file_put_contents(
+            $this->file,
             date('Y-m-d H:i:s') . " LEVEL-{$level} $message" . PHP_EOL,
-            FILE_APPEND
+            FILE_APPEND | LOCK_EX
         );
     }
 }
