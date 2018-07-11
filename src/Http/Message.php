@@ -19,7 +19,7 @@ class Message extends Collection
         extract([
             'version' => '1.1',
             'headers' => [],
-            'body'    => '',
+            'body'    => null,
         ]);
         
         # todo -- verify the cyclic protection against the same var name
@@ -27,9 +27,7 @@ class Message extends Collection
         
         extract($init, EXTR_IF_EXISTS);
         
-        $stream = new Stream();
-        if ($body)
-            $stream->write($body);
+        $stream = Stream::factory($body);
             
         parent::__construct([
             'version' => $version,
@@ -57,5 +55,41 @@ class Message extends Collection
 
         $stream = $this->get('body');
         $stream->write($contents);
+    }
+    
+    
+    function getHeaders()
+    {
+        return $this->get('headers')->toArray();
+    }
+    
+    function hasHeader($id)
+    {
+        return $this->get('headers')->has($id);
+    }
+
+    function getHeader($id, $default=[])
+    {
+        return $this->get('headers')->get($id, $default);
+    }
+    
+    function setHeader($id, $value)
+    {
+        return $this->get('headers')->set($id, $value);
+    }
+    
+    function addHeader($id, $value)
+    {
+        return $this->get('headers')->add($id, $value);
+    }
+    
+    function removeHeader($id)
+    {
+        return $this->get('headers')->remove($id);
+    }
+    
+    function getHeaderLine($id, $default='')
+    {
+        return $this->get('headers')->getLine($id, $default);
     }
 }

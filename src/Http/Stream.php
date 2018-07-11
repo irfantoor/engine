@@ -14,12 +14,69 @@ use Psr\Http\Message\StreamInterface;
  */
 class Stream implements StreamInterface
 {
-//     protected $filename;
-    protected $fp;
+    protected $stream   = null;
+    protected $metadata = [];
     
-    function __construct()
+    static function factory($mixed = null, $options = [])
     {
-        $this->fp = tmpfile();
+        if ($mixed === null) {
+            $stream = new Stream(fopen('php://temp', 'w+'));
+        } elseif (is_string($mixed)) {
+            $stream = new Stream(fopen('php://temp', 'w+'));
+            $stream->write($mixed);
+            $stream->rewind();
+        } elseif (is_resource($mixed)) {
+            $stream = new Stream($mixed);
+        } elseif (is_object($mixed)) {
+            if (is_a($mixed, 'IrfanTOOR\\Engine\\Http\\Stream')) {
+                $stream = $mixed;
+            } elseif (is_a($mixed, 'ArrayIterator')) {
+                $stream = new Stream(fopen('php://temp', 'w+'));
+                foreach($mixed as $item) {
+                    $stream->write($item);
+                }
+                $stream->rewind();
+            } else {
+                if (method_exists($mixed, '__toString')) {
+                    $mixed = (string) $mixed;
+                    $stream = new Stream(fopen('php://temp', 'w+'));
+                    $stream->write($mixed);
+                    $stream->rewind();
+                } else {
+                    throw new \InvalidArgumentException('Invalid argument mixed');
+                }
+            }
+        }
+        
+        if (isset($options['metadata'])) {
+            $md =  $options['metadata'];
+            if (is_array($md)) {
+                foreach($md as $k=>$v) {
+                    $stream->setMetaData($k, $v);
+                }
+            }
+        }
+        
+        if (isset($options['size'])) {
+            $stream->setMetaData('size', $options['size']);
+        }
+        
+        return $stream;
+    }
+    
+    function __construct($stream)
+    {
+        if (is_resource($stream)) {
+            $this->stream = $stream;
+        } else {
+            throw new \InvalidArgumentException('invalid argument stream');
+        }
+    }
+    
+    
+    function __destruct()
+    {
+        $this->close();
     }
     
     /**
@@ -49,8 +106,9 @@ class Stream implements StreamInterface
      */
     public function close()
     {
-        if ($this->fp)
-            fclose($this->fp);
+        if (is_resource($this->stream)) {
+            fclose($this->stream);
+        }
     }
 
     /**
@@ -63,6 +121,16 @@ class Stream implements StreamInterface
     public function detach()
     {
         # todo
+        $stream = $this->stream;
+        $this->stream = null;
+        
+        return $stream;
+    }
+    
+    
+    public function attach(&$stream)
+    {
+        $this->stream = $stream;
     }
 
     /**
@@ -74,6 +142,11 @@ class Stream implements StreamInterface
     {
         return $this->getMetaData('size');
     }
+    
+    public function setSize($size)
+    {
+        $this->setMetaData('size', $size);
+    }
 
     /**
      * Returns the current position of the file read/write pointer
@@ -83,7 +156,11 @@ class Stream implements StreamInterface
      */
     public function tell()
     {
-        return ftell($this->fp);
+        if (is_resource($this->stream)) {
+            return ftell($this->stream);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -93,8 +170,8 @@ class Stream implements StreamInterface
      */
     public function eof()
     {
-        if ($this->fp)
-            return feof($this->fp);
+        if ($this->stream)
+            return feof($this->stream);
             
         return true;
     }
@@ -106,10 +183,11 @@ class Stream implements StreamInterface
      */
     public function isSeekable()
     {
-        if ($this->fp) {
-            fseek($this->fp, 1, SEEK_CUR);
-            if (fseek($this->fp, -1, SEEK_CUR) === 0)
-                return true;
+        if (is_resource($this->stream)) {
+            return true;
+//             fseek($this->stream, 1, SEEK_CUR);
+//             if (fseek($this->stream, -1, SEEK_CUR) === 0)
+//                 return true;
         }
         return false;
     }
@@ -128,9 +206,13 @@ class Stream implements StreamInterface
      */
     public function seek($offset, $whence = SEEK_SET)
     {
-        if (fseek($this->fp, $offset, $whence) !== 0) {
-            throw new Exception('seek failure');
+        if ($this->isSeekable()) {
+            if (fseek($this->stream, $offset, $whence) !== 0) {
+                throw new Exception('seek failure');
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -145,9 +227,13 @@ class Stream implements StreamInterface
      */
     public function rewind()
     {
-        if (!rewind($this->fp)) {
-            throw new Exception('rewind failure');
+        if ($this->isSeekable()) {
+            if (!rewind($this->stream)) {
+                throw new Exception('rewind failure');
+            }
+            return true;
         }
+        return false;
     }
 
     /**
@@ -158,7 +244,7 @@ class Stream implements StreamInterface
     public function isWritable()
     {
         # todo
-        # return is_writable($this->filename);
+        return is_resource($this->stream) ? true : false;
     }
 
     /**
@@ -170,7 +256,11 @@ class Stream implements StreamInterface
      */
     public function write($string)
     {
-        fwrite($this->fp, $string);
+        if ($this->isWritable()) {
+            return fwrite($this->stream, $string);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -181,7 +271,7 @@ class Stream implements StreamInterface
     public function isReadable()
     {
         # todo
-        # return is_readable($this->filename);
+        return is_resource($this->stream) ? true : false;
     }
 
     /**
@@ -196,7 +286,11 @@ class Stream implements StreamInterface
      */
     public function read($length)
     {
-        return fread($this->fp, $length);
+        if ($this->isReadable()) {
+            return fread($this->stream, $length);
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -210,7 +304,7 @@ class Stream implements StreamInterface
     {
         $contents = '';
         while (!$this->eof()) {
-            $contents .= stream_get_contents($stream, 8192);
+            $contents .= stream_get_contents($this->stream, 8192);
         }
         return $contents;
     }
@@ -229,16 +323,22 @@ class Stream implements StreamInterface
      */
     public function getMetadata($key = null)
     {
-        if (!$this->fp)
+        if (!is_resource($this->stream)) {
             return null;
-            
-        $fstat = fstat($this->fp);
-        $fstat = array_slice($fstat, 13);
+        }
+        
+        $fstat = fstat($this->stream);
+        $fstat = array_merge(array_slice($fstat, 13), $this->metadata);
         
         if ($key) {
             return isset($fstat[$key]) ? $fstat[$key] : null;
         }
         
         return $fstat;
+    }
+    
+    function setMetaData($k, $v)
+    {
+        $this->metadata[$k] = $v;
     }
 }

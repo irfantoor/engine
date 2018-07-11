@@ -31,7 +31,7 @@ class Uri extends Collection
 {
 
     protected static $default_ports = [
-        ''      => 80,
+        # ''      => 80,
         'http'  => 80,
         'https' => 443,
     ];
@@ -48,11 +48,11 @@ class Uri extends Collection
         $host = $env['HTTP_HOST'] ?: ($env['SERVER_NAME'] ?: 'localhost');
         $host = explode(':', $host)[0];
         extract([
-            'scheme'   => $env['REQUEST_SCHEME'] ?: 'http',
+            'scheme'   => 'scheme',
             'user'     => null,
             'pass'     => null,
             'host'     => $host,
-            'port'     => $env['SERVER_PORT'],
+            'port'     => null,
             'path'     => '',
             'query'    => '',
             'fragment' => '',
@@ -63,12 +63,17 @@ class Uri extends Collection
         ]);
         
         if (!$uri) {
-            $uri =  $scheme . '://' . $host . ':' . $port . ($env['REQUEST_URI'] ?: '/');
+            $uri =  'http://' . $host . ($env['REQUEST_URI'] ?: '/');
+        } else {
+            if (strpos($uri, '://') === false) {
+                $uri = 'scheme://' . $uri;
+            }
         }
         
         $parsed = parse_url($uri);
-        if (!$parsed)
-            $parsed = [];
+        if (!$parsed) {
+            throw new \InvalidArgumentException('Invalid uri');
+        }
 
         extract($parsed);
         
@@ -93,19 +98,31 @@ class Uri extends Collection
     private function _process()
     {
         extract($this->toArray());
-        
         $user_info = '';
         if ($user && $pass) {
             $user_info = $user . ':' . $pass;
         }
         $this->setItem('user_info', $user_info);
         
+        if ($scheme === 'scheme')
+            $scheme = '';
+            
+        if ($scheme === '') {
+            if ($port === 443) {
+                $scheme = 'https';
+            } else {
+                $scheme = 'http';
+            }
+            $this->setItem('scheme', $scheme);
+        }
+            
         if ($port) {
             $default_port = self::$default_ports[$scheme] ?: null;
             if ($default_port === $port) {
                 $port = null;
             }
         }
+        
         $this->setItem('port', $port);
         
         $authority = 

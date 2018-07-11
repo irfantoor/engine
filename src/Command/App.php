@@ -34,6 +34,23 @@ Note: if no option is provided the basic app framework is initialized
 '
             ],
             'app:serve' => 'Serves the application',
+            'app:sync'  => [
+                'Syncs up/down the application',
+                '
+Syncs the application
+
+FORMAT
+------
+app:sync [up|down] [folder|file]
+
+OPTIONS
+-------
+up        uploads/syncs the app/db/img etc.
+down      downloads/syncs the storage/log/db/img etc.
+folder    all the files in only this folder are synced
+file      only this file is synced
+                ',
+            ],
             'app:up'    => 'Put the app in service mode',
             'app:down'  => 'Put the app in maintenance mode',
             'app:test'  => 'Test Application',
@@ -90,7 +107,7 @@ Note: if no option is provided the basic app framework is initialized
             $contents = $this->fs->read('public/index.php');
             $contents = str_replace(
                             'bootstrap.php', 
-                            'views/maintenance.php', 
+                            'Views/maintenance.php', 
                             $contents
                         );
             $this->fs->put('public/index.php', $contents);
@@ -104,7 +121,7 @@ Note: if no option is provided the basic app framework is initialized
             $this->fs->delete('app/.maintenance');
             $contents = $this->fs->read('public/index.php');
             $contents = str_replace(
-                            'views/maintenance.php', 
+                            'Views/maintenance.php', 
                             'bootstrap.php',
                             $contents
                         );
@@ -121,7 +138,27 @@ Note: if no option is provided the basic app framework is initialized
     }    
     
     function app_test($args) {
-        system(ROOT . 'vendor/bin/phpunit --testdox --bootstrap ' . ROOT . 'app/autoload.php');
+        $ouput = [];
+        exec(ROOT . 'vendor/bin/phpunit --testdox --bootstrap ' . ROOT . 'app/autoload.php', $output);
+        
+        foreach($output as $line) {
+            if (strpos($line, '✔') !== false) {
+                $line = str_replace('✔', '[✔]', $line);
+                $this->writeln($line, 'green');
+            } elseif (strpos($line, '✘') !== false) {
+                $line = str_replace('✘', '[✘]', $line);
+                $this->writeln('');
+                $this->writeln($line, 'red');
+            } elseif (strpos($line, '☢') !== false) {
+                $line = str_replace('☢', '[ ]', $line);
+                $this->writeln($line, 'yellow');
+            } elseif (strpos($line, '│') !== false) {
+                $line = str_replace('│', '  │', $line);
+                $this->writeln($line, 'red');
+            } else {
+                $this->writeln($line);
+            }
+        }
     }
     
     function app_init($args)
@@ -133,10 +170,10 @@ Note: if no option is provided the basic app framework is initialized
                 $this->_create_folders(
                     [
                         'app',
-                        'app/command',
-                        'app/controller',
-                        'app/model',
-                        'app/views',
+                        'app/Command',
+                        'app/Controller',
+                        'app/Model',
+                        'app/Views',
                         'public',
                         'storage',
                         'storage/cache',
@@ -151,11 +188,11 @@ Note: if no option is provided the basic app framework is initialized
                         'app/autoload.php',
                         'app/bootstrap.php',
                         'app/config.php',
-                        'app/controller/WelcomeController.php',
-                        'app/views/footer.php',
-                        'app/views/header.php',
-                        'app/views/maintenance.php',
-                        'app/views/welcome.php',
+                        'app/Controller/WelcomeController.php',
+                        'app/Views/footer.php',
+                        'app/Views/header.php',
+                        'app/Views/maintenance.php',
+                        'app/Views/welcome.php',
                         'public/favicon.ico',
                         'public/index.php',
                         'public/robots.txt',
@@ -166,16 +203,16 @@ Note: if no option is provided the basic app framework is initialized
             case 'auth':
                 $this->_create_files(
                     [
-                        'app/controller/AdminController.php',
-                        'app/controller/admin/DashboardController.php',
-                        'app/middleware/AuthMiddleware.php',
-                        'app/model/Sessions.php',
-                        'app/model/Users.php',
-                        'app/views/admin/dashboard.php',
-                        'app/views/auth/forgot.php',
-                        'app/views/auth/login.php',
-                        'app/views/auth/menu.php',
-                        'app/views/auth/register.php',
+                        'app/Controller/AdminController.php',
+                        'app/Controller/Admin/DashboardController.php',
+                        'app/Middleware/AuthMiddleware.php',
+                        'app/Model/Sessions.php',
+                        'app/Model/Users.php',
+                        'app/Views/admin/dashboard.php',
+                        'app/Views/auth/forgot.php',
+                        'app/Views/auth/login.php',
+                        'app/Views/auth/menu.php',
+                        'app/Views/auth/register.php',
                         
                         'storage/db/sessions.sqlite',
                         'storage/db/users.sqlite',
@@ -203,8 +240,8 @@ Note: if no option is provided the basic app framework is initialized
             case 'cache':
                 $this->_create_files(
                     [
-                        'app/middleware/CacheMiddleware.php',
-                        'app/model/Cache.php',
+                        'app/Middleware/CacheMiddleware.php',
+                        'app/Model/Cache.php',
                     ]
                 );
                 $m = new Model;
@@ -215,7 +252,7 @@ Note: if no option is provided the basic app framework is initialized
             case 'log':
                 $this->_create_files(
                     [
-                        'app/middleware/LogMiddleware.php',
+                        'app/Middleware/LogMiddleware.php',
                     ]
                 );
                 break;
@@ -224,6 +261,83 @@ Note: if no option is provided the basic app framework is initialized
                 $this->help(['app:init']);
         }
     }
+    
+    function app_sync($args)
+    {
+        if (!$args) {
+            $this->help('app:sync');
+            exit;
+        }
+        
+        $action = $args[0];
+        $path = isset($args[1]) ? ltrim($args[1], '/') : '';
+        
+        $user = 'farhad@ftp.farhad.fr';
+        $local = ROOT . $path;
+        $remote = '~/ds/irfantoor.com/' . $path;
+
+
+
+        
+        $remote = $user . ':' . $remote;        
+        switch($action) {
+            case 'up':
+                $exclude = <<<END
+.git
+.gitignore
+.DS_Store
+composer.lock
+/app/command
+/app/config.php
+/public
+/storage/backup
+/storage/cache
+/storage/db/cache.sqlite
+/storage/db/log.sqlite
+/storage/ds/contact
+/storage/ds/exploits
+/storage/ds/pending
+/storage/ds/uploads
+/vendor/irfantoor/engine/ie
+/vendor/irfantoor/engine/src/Command
+
+END;
+                
+                $src = $local;
+                $dest = $remote;
+                break;
+                
+            case 'down':
+                $exclude = <<<END
+.git
+.gitignore
+.DS_Store
+composer.lock
+/storage/db/exploits.sqlite
+/storage/db/posts.sqlite
+/storage/db/users.sqlite
+
+END;
+
+                $src = $remote;
+                $dest = $local;
+                break;
+                
+            default:
+                $this->help('app:sync');
+                exit;
+        }
+        
+        $this->fs->put('.exclude', $exclude);
+        $exclude = ROOT . '.exclude';
+        $rsync = 'rsync -Cvarlz --progress --delete ' .
+                 '--exclude-from=' . $exclude . ' ' .
+                 $src . ' ' . $dest;
+                 
+        $this->writeln($rsync);
+        # $this->fs->delete('.exclude');
+    }
+    
     
     static function copyIe()
     {        

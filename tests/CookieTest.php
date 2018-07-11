@@ -12,8 +12,14 @@ class CookieTest extends TestCase
 	
     public function testInstanceOfCookie(): void
 	{
-	    $cookies = Cookie::createFromArray(['hello' => 'world']);
-	    foreach($cookies as $cookie)
-    	    $this->assertInstanceOf('IrfanTOOR\Engine\Http\Cookie', $cookie);
+	    $cookie = new Cookie(['name'  => 'hello', 'value' => 'world']);
+    	$this->assertInstanceOf('IrfanTOOR\Engine\Http\Cookie', $cookie);
+	}
+	
+    public function testCookieValues(): void
+	{
+	    $cookie = new Cookie(['name'  => 'hello', 'value' => 'world']);
+	    $this->assertEquals('hello', $cookie->get('name'));
+    	$this->assertEquals('world', $cookie->get('value'));
 	}
 }

@@ -9,91 +9,107 @@ use IrfanTOOR\Engine\Http\Cookie;
 
 class Session extends Collection
 {
-    protected $sessions;
+    protected $id;
+    protected $sid;
     protected $created_at;
-    protected $updated_at;
+    protected $updated_at;    
+    protected $sessions;
 
     function __construct($request)
     {
-        $server  = $request->get('server');
-        $sid     = $request->get('cookie')['SID'];
-
         $this->sessions = new Sessions;
-
-        if (!$sid)
-        {
-            $sid = md5($server['REMOTE_ADDR'] . $server['HTTP_USER_AGENT'] . time());
+        register_shutdown_function([$this, 'save']);
+        $server  = $request->get('server');
+        $sid     = $request->get('cookie.sid', null);
+        
+        # verify integrity of sid
+        if ($sid) {
+            preg_match('|([0-9a-f]{32})|', $sid, $m);
+            if (!isset($m[1]) || ($m[1] !== $m[0])) {
+                $sid = null;
+            }
+        }
+        
+        if (!$sid) {
+            $sid = md5(
+                'IrfanTOOR\\Engine\\Session' .
+                $server['HTTP_HOST'] .
+                $server['REMOTE_ADDR'] . 
+                $server['HTTP_USER_AGENT']
+            );
+            
+            # send cookie
             $c = new Cookie([
-                'name'  => 'SID',
+                'name'  => 'sid',
                 'value' => $sid,
             ]);
-            $c->send();
-
-            $this->sessions->insertOrUpdate(
+            
+            $c->send();            
+        }
+        
+        $session = $this->getSession($sid);
+        if (!$session) {
+            # create session
+            $this->sessions->insert(
                 [
-                    'sid' => $sid,
-                    'value' => json_encode([]),
-                    'updated_at' => time(),
+                    'sid'        => $sid,
+                    'value'      => '[]',                   # json_encode([])
+                    'updated_at' => $server['REQUEST_TIME'] # time(),
                 ]
             );
+            
+            $session = $this->getSession($sid);
         }
-
-        $session = $this->sessions->getFirst(
-            [
-                'where' => 'sid = :sid'
-            ],
-            [
-                'sid' => $sid,
-            ]
-        );
-
-        $value['sid'] = $sid;
-        foreach(json_decode($session['value'], 1) as $k=>$v) {
-                $value[$k] = $v;
+        
+        $v = json_decode($session['value'], true);
+        $this->set($v);
+        
+        foreach($session as $k=>$v) {
+            if (is_int($k))
+                continue;
+                
+            if ($k === 'value')
+                continue;
+                
+            $this->$k = $v;
         }
-
-        $this->created_at = $session['created_at'];
-        $this->updated_at = $session['updated_at'];
-        parent::__construct($value);
-
+                
         # 10 minutes of inactivity will remove the token logged
-        if ((time() - $this->updated_at) > 10 * 60)
-            $this->remove('logged');
+        if ((time() - $session['updated_at']) > 10 * 60) {
+            $this->destroy();
+        }
+        
+        $this->updated_at = $server['REQUEST_TIME'];
     }
-
-    function set($id, $value = null)
-    {
-        parent::set($id, $value);
-        $this->save();
+    
+    function getSession($sid) {    
+        return $this->sessions->getFirst(
+            ['where' => 'sid = :sid'],
+            ['sid' => $sid]
+        );
     }
-
-    function remove($id)
-    {
-        parent::remove($id);
-        $this->save();
-    }
-
+    
     function destroy()
     {
-        $sid = $this->get('sid');
-        $this->sessions->remove(
-            [
-                'where' => 'sid = :sid'
-            ],
-            [
-                'sid' => $sid,
-            ]
-        );
+        foreach ($this->toArray() as $k=>$v) {
+            $this->remove($k);
+        }
+        
+        $this->save();
     }
 
     function save()
     {
-        $this->sessions->insertOrUpdate(
-            [
-                'sid' => $this->get('sid'),
-                'value' => json_encode($this->toArray()),
-                'updated_at' => time(),
-            ]
-        );
+        if ($this->sid) {
+            $this->sessions->insertOrUpdate(
+                [
+                    'id'         => $this->id,
+                    'sid'        => $this->sid,
+                    'value'      => json_encode($this->toArray()),
+                    'created_at' => $this->created_at,
+                    'updated_at' => $this->updated_at,
+                ]
+            );
+        }
     }
 }

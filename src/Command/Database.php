@@ -182,7 +182,7 @@ dbname    name of the database
         $dbname2 = isset($args[1]) ? $args[1] : $dbname;
 
         $model   = ucfirst($args[0]);
-        $cname   = '\\App\\Model\\' . $model;
+        $cname   = 'App\\Model\\' . $model;
         $class   = new $cname();
         $file1   = $class->getFile();
         $storage = ROOT . 'storage/';
@@ -196,7 +196,7 @@ dbname    name of the database
     {
         if ($args) {
             $model = ucfirst($args[0]);
-            $cname = '\\App\\Model\\' . $model;
+            $cname = 'App\\Model\\' . $model;
             $class = new $cname();
             $item = $class->getFirst(
                 ['select' => 'count(*)']
@@ -231,7 +231,7 @@ dbname    name of the database
 
     function _getList()
     {
-        $fs = new Filesystem(ROOT . 'app/model/');
+        $fs = new Filesystem(ROOT . 'app/Model/');
         $list = $fs->listContents();
 
         $models = [];
@@ -246,7 +246,7 @@ dbname    name of the database
     {
         if ($args) {
             $model = ucfirst($args[0]);
-            $cname = '\\App\\Model\\' . $model;
+            $cname = 'App\\Model\\' . $model;
             $class = new $cname();
 
             $this->_dump($class->getSchema(), false);
@@ -337,7 +337,7 @@ dbname    name of the database
         }
 
         $model   = ucfirst($args[0]);
-        $cname   = '\\App\\Model\\' . $model;
+        $cname   = 'App\\Model\\' . $model;
         $class   = new $cname();
 
         $sql = $args[1];

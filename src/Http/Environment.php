@@ -9,6 +9,8 @@ class Environment extends Collection
 {
     function __construct($data = [])
     {
+        # todo -- verify $_ENV, getenv()
+        
         if (!is_array($data))
             throw new Exception('to be mocked $data must be an array');
 

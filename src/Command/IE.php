@@ -22,7 +22,7 @@ class IE extends Command
             $name = $item['basename'];
             if (strpos($name, '.php') !== false && $name != 'IE.php') {
                 $name = ucfirst(str_replace('.php', '', $name));
-                $cname = '\\IrfanTOOR\\Engine\\Command\\' . ucfirst($name);
+                $cname = 'IrfanTOOR\\Engine\\Command\\' . ucfirst($name);
                 $class = new $cname;
                 foreach($class->getHelp() as $cmd => $hlp) {
                     $this->help[strtolower($name)] = $hlp;
@@ -31,12 +31,12 @@ class IE extends Command
             }
         }
         
-        $list = $fs->listContents('app/command/');
+        $list = $fs->listContents('app/Command/');
         foreach($list as $item) {
             $name = $item['basename'];
             if (strpos($name, '.php') !== false && $name != 'IE.php') {
                 $name = ucfirst(str_replace('.php', '', $name));
-                $cname = '\\App\\Command\\' . ucfirst($name);
+                $cname = 'App\\Command\\' . ucfirst($name);
                 $class = new $cname;
                 foreach($class->getHelp() as $cmd => $hlp) {
                     $this->help[strtolower($name)] = $hlp;
@@ -65,10 +65,10 @@ class IE extends Command
             && (array_key_exists($command, $this->help))
             && $command !== 'help'
         ) {
-            if (file_exists(ROOT . 'app/command/' . ucfirst($command) . '.php')) {
-                $cname = '\\App\\Command\\' . ucfirst($command);
+            if (file_exists(ROOT . 'app/Command/' . ucfirst($command) . '.php')) {
+                $cname = 'App\\Command\\' . ucfirst($command);
             } else {
-                $cname = '\\IrfanTOOR\\Engine\\Command\\' . ucfirst($command);
+                $cname = 'IrfanTOOR\\Engine\\Command\\' . ucfirst($command);
             }
             $class = new $cname();
                 $class->run();
@@ -89,10 +89,10 @@ class IE extends Command
                         parent::help(['help']);
                         exit;
                     }
-                    if (file_exists(ROOT . 'app/command/' . ucfirst($cmd) . '.php')) {
-                        $cname = '\\App\\Command\\' . ucfirst($cmd);
+                    if (file_exists(ROOT . 'app/Command/' . ucfirst($cmd) . '.php')) {
+                        $cname = 'App\\Command\\' . ucfirst($cmd);
                     } else {
-                        $cname = '\\IrfanTOOR\\Engine\\Command\\' . ucfirst($cmd);
+                        $cname = 'IrfanTOOR\\Engine\\Command\\' . ucfirst($cmd);
                     }
                     
                     $class = new $cname();

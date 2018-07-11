@@ -47,14 +47,14 @@ class HeadersTest extends TestCase
 
         $h = new Headers($init);
 
-        $this->assertEquals('google', $h->getLine('Go'));
+        $this->assertEquals('go: google', $h->getLine('Go'));
 
         # Set the key value pair, which is accessible
         $h->set('GO', 'Google');
-        $this->assertEquals('Google', $h->getLine('Go'));
+        $this->assertEquals('GO: Google', $h->getLine('Go'));
         $this->assertEquals($expected, $h->toArray());
 
-        $h->add('content-type', 'char: utf8');
-        $this->assertEquals('text/html, char: utf8', $h->getLine('content-type'));
+        $h->add('Content-type', 'char: utf8');
+        $this->assertEquals('Content-type: text/html, char: utf8', $h->getLine('content-type'));
     }
 }

@@ -31,7 +31,7 @@ class Events extends Collection
         for ($level = 0; $level <= 10; $level++) {
             $list = $this->get($event_id . '.' . $level, []);
             foreach ($list as $event) {
-                $event($this->engine);
+                $event();
             }
         }
     }

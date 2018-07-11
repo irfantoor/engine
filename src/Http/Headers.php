@@ -65,21 +65,23 @@ class Headers extends Collection
 
     # used by set($id, $value)
     public function setItem($id, $value = null)
-    {
-        if (!is_array($value))
+    {    
+        if (!is_array($value)) {
             $value = [$value];
-
+        }
+        
         parent::setItem(strtolower($id), ['id' => $id, 'value' => $value]);
     }
 
     public function add($id, $value)
     {
-        $old = $this->get($id);
-        if (!is_array($old))
-            $old = [$old];
-
-        $new = is_array($value) ? $value : [$value];
-        $this->set($id, array_merge($old, array_values($new)));
+        if ($this->has($id)) {
+            $old = $this->get($id);
+            $new = is_array($value) ? $value : [$value];
+            $this->set($id, array_merge($old, array_values($new)));        
+        } else {
+            $this->set($id, $value);
+        }        
     }
 
     public function has($id)
@@ -92,11 +94,22 @@ class Headers extends Collection
         return $this->has($id) ? parent::get(strtolower($id))['value'] : $default;
     }
 
+    public function getName($id)
+    {
+        return $this->has($id) ? parent::get(strtolower($id))['id'] : $id;
+    }
+
     public function getLine($id, $default = '')
     {
         $values = $this->get($id, []);
         $line = implode(', ', $values);
-        return ('' !== $line) ? $line : $default;
+        $line = ('' !== $line) ? $line : $default;
+        
+        if ($this->has($id)) {    
+            return $this->getName($id) . ': ' . $line;
+        } else {
+            return $id . ': ' . $line;
+        }
     }
 
     public function remove($id)

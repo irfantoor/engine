@@ -20,7 +20,11 @@ class ServerRequestTest extends TestCase
             IrfanTOOR\Engine\Http\ServerRequest::class,
             $request
         );
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Request::class, $request);
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Message::class, $request);
+        $this->assertInstanceOf(
+            IrfanTOOR\Engine\Http\Request::class, 
+            $request
+        );
     }
+    
+    # todo -- test the default values inherit from environment
 }

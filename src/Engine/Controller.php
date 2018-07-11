@@ -9,7 +9,7 @@ use IrfanTOOR\Engine\View;
 
 class Controller extends Collection
 {
-    protected $middlewares;
+    protected $middlewares = [];
 
     public function __construct($engine)
     {
@@ -68,7 +68,7 @@ class Controller extends Collection
         $data = $this->config('data', []);
         
         foreach($this->toArray() as $k=>$v) {
-            $vv = $data[$k] ?: null;
+            $vv = isset($data[$k]) ? $data[$k] : null;
             if (is_array($vv)) {
                 $data[$k] = array_merge($vv, $v);
             } else {

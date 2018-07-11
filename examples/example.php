@@ -50,16 +50,16 @@ $ie = new Engine([
 ]);
 
 $ie->addRoute('GET', '/', function($request, $response){
-    $stream = $response->getBody();
-    $stream->write($request->getMethod() . ': Hello World!');
+    $stream = $response->get('body');
+    $stream->write($request->get('method') . ': Hello World!');
     return $response;
 });
 
 $ie->addRoute('SMART', '/', 'controller');
 
 $ie->addRoute('ANY', '.*', function($request, $response){
-    $stream = $response->getBody();
-    $stream->write($request->getMethod() . ':default' );
+    $stream = $response->get('body');
+    $stream->write($request->get('method') . ':default' );
     return $response;
 });
 

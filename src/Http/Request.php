@@ -47,4 +47,21 @@ class Request extends Message
         parent::__clone();
         $this->set('uri', clone $this->get('uri'));
     }
+    
+    # todo -- send request
+    # todo -- send - must return a response
+    # todo -- sendAsync - must return a promise
+    /*
+     * Sends the request
+     * 
+     * returns IrfanTOOR\Engine\Http\Response
+     */
+    function send()
+    {
+        $uri = (string) $this->get('uri');
+        if (!$uri)
+            throw new \Exception('URI not defined');
+            
+        print_r($this);
+    }
 }

@@ -69,13 +69,13 @@ modelname    name of the model
         }
         
         # create the model file
-        if ($this->fs->has('app/model/' . $class . '.php')) {
+        if ($this->fs->has('app/Model/' . $class . '.php')) {
             $this->writeln('[ ] model : ' . $class . ' -- already exists', 'yellow');
         } else {
-            $contents = $this->fs->read($path . 'app/model/Model.php.src');
+            $contents = $this->fs->read($path . 'app/Model/Model.php.src');
             $contents = str_replace('{$class}', $class, $contents);
             $contents = str_replace('{$file}', $file, $contents);
-            $this->fs->write('app/model/' . $class . '.php', $contents);
+            $this->fs->write('app/Model/' . $class . '.php', $contents);
             
             $this->writeln('[x] model : ' . $class . ' -- created', 'green');
         }
@@ -85,7 +85,7 @@ modelname    name of the model
             $this->writeln('[ ] db : ' . $file . ' -- already exists', 'yellow');
         } else {
             $this->fs->write('storage/db/' . $file, '');
-            $cname = '\\App\\Model\\' . $class;
+            $cname = 'App\\Model\\' . $class;
             $m = new $cname();
             $m->create();
             $this->writeln('[x] db : ' . $file . ' -- created', 'green');
@@ -94,7 +94,7 @@ modelname    name of the model
     
     function model_list($args)
     {
-        $list = $this->fs->listContents('app/model/');
+        $list = $this->fs->listContents('app/Model/');
     
         foreach($list as $item) {
             $this->writeln('- ' . str_replace('.php', '', $item['basename']));
@@ -109,8 +109,8 @@ modelname    name of the model
             exit;
         }
         
-        if (file_exists(ROOT . 'app/model/' . ucfirst($class) . '.php')) {
-            $cname = '\\App\\Model\\' . ucfirst($class);
+        if (file_exists(ROOT . 'app/Model/' . ucfirst($class) . '.php')) {
+            $cname = 'App\\Model\\' . ucfirst($class);
             $class = new $cname();
         
             $schema = $class->getSchema();
@@ -133,13 +133,13 @@ modelname    name of the model
     function createClassFile($class)
     {
         # create the model file
-        if ($this->fs->has('app/model/' . $class . '.php')) {
+        if ($this->fs->has('app/Model/' . $class . '.php')) {
             $this->writeln('[ ] model : ' . $class . ' -- already exists', 'yellow');
         } else {
-            $contents = $this->fs->read($path . 'app/model/Model.php.src');
+            $contents = $this->fs->read($path . 'app/Model/Model.php.src');
             $contents = str_replace('{$class}', $class, $contents);
             $contents = str_replace('{$file}', $file, $contents);
-            $this->fs->write('app/model/' . $class . '.php', $contents);
+            $this->fs->write('app/Model/' . $class . '.php', $contents);
             
             $this->writeln('[x] model : ' . $class . ' -- created', 'green');
         }  
@@ -152,7 +152,7 @@ modelname    name of the model
             $this->writeln('[ ] db : ' . $file . ' -- already exists', 'yellow');
         } else {
             $this->fs->write('storage/db/' . $file, '');
-            $cname = '\\App\\Model\\' . $class;
+            $cname = 'App\\Model\\' . $class;
             $m = new $cname();
             $m->create();
             $this->writeln('[x] db : ' . $file . ' -- created', 'green');

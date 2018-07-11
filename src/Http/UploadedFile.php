@@ -2,7 +2,6 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-
 use InvalidArgumentException;
 use IrfanTOOR\Engine\Http\Stream;
 use Psr\Http\Message\UploadedFileInterface;
@@ -18,7 +17,6 @@ use RuntimeException;
  */
 class UploadedFile implements UploadedFileInterface
 {
-
     protected $file;
     protected $name;
     protected $type;
@@ -94,7 +92,8 @@ class UploadedFile implements UploadedFileInterface
         }
 
         try {
-            $this->stream = Stream::createFromFile($this->file, $options);
+            $fp = fopen($file, 'r');
+            $this->stream = Stream::factory($fp, $options);
             $this->size = $size ?: $this->stream->getSize();
         } catch(\Exception $e) {
             $this->error = UPLOAD_ERR_NO_FILE;

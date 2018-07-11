@@ -40,7 +40,7 @@ views    cleans the template caches of views
 
     function cache_config()
     {
-        $config = require APP . 'config.php';
+//         $config = require ROOT . 'app/config.php';
         $this->writeln(['cache:config'], ['bg_blue','white']);
         $this->_dump($this->config);
     }

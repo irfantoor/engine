@@ -1,96 +1,94 @@
 <?php
 
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamIterface;
-use IrfanTOOR\Engine\Exception;
+use IrfanTOOR\Engine\Http\Exception;
 use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Factory;
-use IrfanTOOR\Engine\Http\Factory\ResponseFactory;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Response;
-use IrfanTOOR\Engine\Http\Stream;
-use IrfanTOOR\Engine\Http\ResponseStatus;
 
 use PHPUnit\Framework\TestCase;
 
 class ResponseTest extends TestCase
 {
     function getResponse(
-        $status  = Response::STATUS_OK,
-        $headers = null,
-        $body    = null
+        $status  = 200,
+        $headers = [],
+        $body    = ''
     ){
-        $response = new Response($status);
-
-        if ($headers) {
-            foreach ($headers as $key => $value) {
-                $response = $response->withHeader($key, $name);
-            }
-        }
-
-        if (null !== $body) {
-            $response = $response->withBody($body);
-        }
-
-        return $response;
+        return new Response([
+            'status'  => $status,
+            'headers' => $headers,
+            'body'    => $body,
+        ]);
     }
 
     function testResponseInstance()
     {
         $response = $this->getResponse();
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $response);
-        $this->assertInstanceOf(Psr\Http\Message\ResponseInterface::class, $response);
     }
 
     function testDefaultResponseStatus()
     {
         $response = $this->getResponse();
-        $this->assertEquals(Response::STATUS_OK, $response->getStatusCode());
+        $status = $response->get('status');
+        $this->assertEquals(200, $status);
+        $this->assertEquals('OK', $response->phrase($status));
     }
 
     function testHeaders()
     {
         $response = $this->getResponse();
-        $this->assertTrue(is_array($response->getHeaders()));
-        $response = $response->withHeader('alfa', 'beta');
-        $this->assertEquals(['alfa' => ['beta']], $response->getHeaders());
+        $headers = $response->get('headers');
+        $this->assertInstanceOf(
+            IrfanTOOR\Engine\Http\Headers::class,
+            $headers
+        );
+        
+        foreach($headers as $k => $v) {
+            $this->assertTrue(is_array($v));
+        }
+
+        $response->get('headers')->set('alfa', 'beta');
+        $this->assertEquals(['beta'], $response->get('headers')->get('ALFA'));
+        $this->assertEquals(
+            ['alfa' =>['beta']], 
+            $response->get('headers')->toArray()
+        );
     }
 
     function testBody()
     {
         $response = $this->getResponse();
-        $this->assertInstanceOf(
-            Psr\Http\Message\StreamInterface::class,
-            $response->getBody()
-        );
+        $this->assertEquals('', $response->get('body'));
     }
 
     function testDefaults()
     {
         $response = $this->getResponse();
-
-        $this->assertEquals(Response::STATUS_OK, $response->getStatusCode());
-        $this->assertInstanceOf(
-            Psr\Http\Message\StreamInterface::class,
-            $response->getBody()
-        );
+        
+        $this->assertEquals('1.1', $response->get('version'));
+        $this->assertEquals(200, $response->get('status'));
+        $this->assertEquals([], $response->get('headers')->toArray());
+        $this->assertEquals('', $response->get('body'));
     }
 
-    function testParameterInitialization()
-    {
-        $response = new Response(Response::STATUS_NOT_FOUND);
-
-        $this->assertEquals(
-            Response::STATUS_NOT_FOUND,
-            $response->getStatusCode()
-        );
-    }
+//     function testParameterInitialization()
+//     {
+//         $response = new Response([
+//             'status' => 'NOT_FOUND',
+//         ]);
+// 
+//         $this->assertEquals(404, $response->get('status'));
+//     }
 
     function testWrite()
     {
-        $response = (new Response())
-                        ->write('Hello World!');
-
-        $this->assertEquals('Hello World!', (string) $response->getBody());
+        $response = new Response();
+        $response->write('Hello');
+        $this->assertEquals('Hello', $response->get('body'));
+        $response->write(' ');
+        $this->assertEquals('Hello ', $response->get('body'));
+        $response->write('World!');
+        $this->assertEquals('Hello World!', $response->get('body'));
     }
 }

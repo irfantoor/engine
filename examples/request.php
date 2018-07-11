@@ -13,9 +13,16 @@ define('HACKER_MODE', true);
 
 // Note: SMART is not an allowed method, but since the HACKER_MODE is set to true,
 // it will construct the request
-$request = (new Request('SMART', 'http://example.com'))
-    ->withRequestTarget('test/world')
-    ->withHeader('Engine', 'Irfan\'s Engine v1.0');
+$request = new Request 
+(
+    [
+        'method' => 'SMART', 
+        'uri'    => 'http://example.com'
+    ]
+);
+
+# $request->withRequestTarget('test/world')
+$request->withHeader('Engine', 'Irfan\'s Engine v1.0');
 
 Debug::dump($request);
 Debug::dump((string) $request->getUri());
