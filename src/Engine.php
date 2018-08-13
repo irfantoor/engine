@@ -116,7 +116,7 @@ class Engine
     function redirectTo($url, $status = 307)
     {
         $response = new Response(['status' => $status]);
-        $response->get('headers')->set('Location', $url);
+        $response->setHeader('Location', $url);
         $response->write(sprintf('<!DOCTYPE html>
 <html>
 <head>

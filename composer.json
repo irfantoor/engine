@@ -19,7 +19,8 @@
         "latte/latte": "^2.4",
         "psr/http-message": "^1.0",
         "fig/http-message-util": "^1.1",
-        "cebe/markdown": "^1.1"
+        "cebe/markdown": "^1.1",
+        "tracy/tracy": "^2.5"
     },
     "require-dev": {
         "phpunit/phpunit": "^7.1"

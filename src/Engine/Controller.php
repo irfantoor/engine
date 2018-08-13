@@ -9,23 +9,19 @@ use IrfanTOOR\Engine\View;
 
 class Controller extends Collection
 {
+    protected $engine;
     protected $middlewares = [];
 
     public function __construct($engine)
     {
-        $session = $engine->session();
-        $logged = $session->has('logged');
-        parent::__construct([
-            'engine' => $engine,
-            'logged' => $logged,
-            'user'   => $session->get('user', ''),
-        ]);
+        $this->engine = $engine;
+        $this->set('engine', $this->engine);
     }
 
     function __call($func, array $args)
     {
         try {
-            $result = call_user_func_array([$this->engine(), $func], $args);
+            $result = call_user_func_array([$this->engine, $func], $args);
             return $result;
         } catch(Exception $e) {
         }
@@ -64,20 +60,8 @@ class Controller extends Collection
 
     public function show($response, $tplt)
     {
-        # merge with the config data
-        $data = $this->config('data', []);
-        
-        foreach($this->toArray() as $k=>$v) {
-            $vv = isset($data[$k]) ? $data[$k] : null;
-            if (is_array($vv)) {
-                $data[$k] = array_merge($vv, $v);
-            } else {
-                $data[$k] = $v;
-            }
-        }
-        
         $view = new View($this);
-        $response->write($view->process($tplt, $data));
+        $response->write($view->process($tplt));
 
         return $response;
     }

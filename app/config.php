@@ -3,7 +3,7 @@
 return [
     # Application configuration
     'debug' => [
-        'level' =>           1,            # 0: no, 1, 2, 3
+        'level' =>           3,            # 0: no, 1, 2, 3
     ],
 
     'cache' => [

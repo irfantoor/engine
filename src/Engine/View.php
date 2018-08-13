@@ -26,19 +26,21 @@ class View
     
     function process($tplt)
     {
-        $data = $this->controller->toArray();
-        $tplt = ROOT . 'app/Views/' . $tplt . '.php';
-        
+        $tplt = ROOT . 'app/View/' . $tplt . '.php';
         if (!is_file($tplt))
             throw new Exception("tplt: {$tplt}, not found");
 
         $latte = new Latte;
         
         $tmp_dir = $this->config('cache.tmp');
+
         $tmp_dir = $tmp_dir ? ROOT . $tmp_dir : '/tmp';
-        
+
         $latte->setTempDirectory($tmp_dir);
+
+        $data = $this->toArray();
         $result = $latte->renderToString($tplt, $data);
+
         return $result;
     }
 }
