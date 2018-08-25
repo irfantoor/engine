@@ -7,59 +7,40 @@ use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
 use IrfanTOOR\Engine\Http\Stream;
 
-use IrfanTOOR\Debug;
-
-
 class Message implements MessageInterface
 {
     protected $version;
     protected $headers;
     protected $body;
-
-    function __construct($version = '1.1', $headers = [], $body = null)
+    
+    function __construct($init = [])
     {
-        $this->version = $this->validate('version', $version);
-
-        // $headers can be an array of headers or an instance of Headers
-        if (!($headers instanceof Headers)) {
-            $this->headers = new Headers($headers);
+        # defaults
+        $defaults = [
+            'version' => '1.1',
+            'headers' => [],
+            'body'    => null,
+        ];
+        
+        foreach ($defaults as $k=>$v) {
+            if (isset($init[$k])) {
+                $defaults[$k] = $init[$k];
+            }
         }
-
-        $this->body = $this->validate('body', $body);
+        
+        $this->version = $defaults['version'];
+        $this->headers = new Headers($defaults['headers']);
+        $this->body    = Stream::factory($defaults['body']); 
     }
-
-    function __clone()
+    
+    public function __set($id, $value) {}
+    
+    public function __clone()
     {
         $this->headers = clone $this->headers;
-        // if ($this->body)
-        //     $this->body = clone $this->body;
+        $this->body    = Stream::factory($this->body);
     }
-
-    function validate($name, $value)
-    {
-        if (defined('HACKER_MODE') && HACKER_MODE !== false)
-            return $value;
-
-        $$name = $value;
-
-        switch($name) {
-            case 'version':
-                if (!in_array($version, ['1.0', '1.1', '2', '2.0']))
-                    throw new Exception('version: ' . $version . ', is not valid');
-
-                return $version;
-
-            case 'body':
-                if ($body && !($body instanceof StreamInterface))
-                    throw new Exception('body must be a StreamInterface');
-
-                return $body;
-
-            default:
-                return null;
-        }
-    }
-
+    
     /**
      * Retrieves the HTTP protocol version as a string.
      *
@@ -69,6 +50,7 @@ class Message implements MessageInterface
      */
     public function getProtocolVersion()
     {
+        # todo -- validation
         return $this->version;
     }
 
@@ -87,11 +69,9 @@ class Message implements MessageInterface
      */
     public function withProtocolVersion($version)
     {
-        if ($version === $this->version)
-            return $this;
-
         $clone = clone $this;
-        $clone->version = $clone->validate('version', $version);
+        $clone->version = $version;
+        
         return $clone;
     }
 
@@ -152,9 +132,15 @@ class Message implements MessageInterface
      *    header. If the header does not appear in the message, this method MUST
      *    return an empty array.
      */
-    public function getHeader($name)
+    public function getHeader($name, $default=[])
     {
-        return $this->headers->get($name, []);
+        if (is_string($default)) {
+            $default = [$default];
+        } elseif (!is_array($default)) {
+            $default = [];
+        }
+        
+        return $this->headers->get($name, $default);
     }
 
     /**
@@ -178,7 +164,7 @@ class Message implements MessageInterface
      */
     public function getHeaderLine($name)
     {
-        return $this->headers->getLine($naem, '');
+        return $this->headers->getLine($name, "");
     }
 
     /**
@@ -198,11 +184,9 @@ class Message implements MessageInterface
      */
     public function withHeader($name, $value)
     {
-        if ($value === $this->headers->get($name, null))
-            return $this;
-
         $clone = clone $this;
         $clone->headers->set($name, $value);
+        
         return $clone;
     }
 
@@ -224,12 +208,9 @@ class Message implements MessageInterface
      */
     public function withAddedHeader($name, $value)
     {
-        $values = $this->getHeader($name);
-        if (in_array($value, $values))
-            return $this;
-
         $clone = clone $this;
         $clone->headers->add($name, $value);
+        
         return $clone;
     }
 
@@ -249,9 +230,10 @@ class Message implements MessageInterface
     {
         if (!$this->hasHeader($name))
             return $this;
-
+            
         $clone = clone $this;
         $clone->headers->remove($name);
+        
         return $clone;
     }
 
@@ -262,17 +244,6 @@ class Message implements MessageInterface
      */
     public function getBody()
     {
-
-        if (!$this->body) {
-            // $options = [
-            //     'metadata' => [
-            //         'mode' => 'r+'
-            //     ]
-            // ];
-            $contents = '';
-            $this->body = Stream::createFromString('');
-        }
-
         return $this->body;
     }
 
@@ -292,7 +263,8 @@ class Message implements MessageInterface
     public function withBody(StreamInterface $body)
     {
         $clone = clone $this;
-        $clone->body = $body;
+        $this->body = new Stream($body);
+        
         return $clone;
     }
 
@@ -308,8 +280,6 @@ class Message implements MessageInterface
             throw new Exception('$contents can only be of type string');
         }
 
-        $stream = $this->getBody();
-        $stream->write($contents);
-        return $this;
+        $this->body->write($contents);
     }
 }

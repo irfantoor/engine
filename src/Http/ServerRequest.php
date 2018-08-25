@@ -2,14 +2,14 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use Psr\Http\Message\ServerRequestInterface;
-
+use IrfanTOOR\Collection;
 use IrfanTOOR\Exception;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Factory;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Uri;
 use IrfanTOOR\Engine\Http\UploadedFile;
+use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Representation of an incoming, server-side HTTP request.
@@ -50,63 +50,49 @@ use IrfanTOOR\Engine\Http\UploadedFile;
  * message and return an instance that contains the changed state.
  */
 class ServerRequest extends Request implements ServerRequestInterface
-{
-    protected $server;
-    protected $cookies;
-    protected $query;
-    protected $files;
-    protected $post;
+{    
+    protected $attributes;
 
-    public function __construct($env = [])
+    function __construct($init = [])
     {
-        # todo --
-        // if (!isset($_SESSION))
-        //      session_start();
+        $env = isset($init['env']) ? $init['env'] : [];
+        $env = new Environment($env);
+        
+        $defaults = [
+            'version' => str_replace('HTTP/', '', $env['SERVER_PROTOCOL']),
+            'method'  => $env['REQUEST_METHOD'],
+            'env'     => $env,
+            'get'     => $_GET,
+            'post'    => $_POST,
+            'cookie'  => $_COOKIE, # todo -- Cookie::createFromArray($_COOKIE),
+            'files'   => $_FILES,  # todo -- UploadedFile::createFromArray($_FILES),
+        ];
 
-        if (!($env instanceof Environment))
-            $env = new Environment($env);
-
-        // Sets the defaults
-        parent::__construct();
-        $uri = Uri::createFromEnvironment($env);
-        $cookies = Cookie::createFromArray($_COOKIE, [
-            'domain' => $uri->getHost()
-        ]);
-
-        $this->version = str_replace('HTTP/', '', $env['SERVER_PROTOCOL']);
-        $this->method  = $env['REQUEST_METHOD'];
-        $this->uri     = $uri;
-        $this->headers = Headers::createFromEnvironment($env);
-        $this->server  = $env->toArray();
-        $this->cookies  = $cookies;
-        $this->query   = $_GET;
-        $this->files   = UploadedFile::createFromArray($_FILES);
-        $this->post    = $_POST;
-
-        // create an array of attributes
-        $this->attributes = array_merge(
-            ($_GET ?: []),
-            ($_POST ?: []),
-            ($_COOKIE ?: [])
-        );
-    }
-
-    function validate($name, $value)
-    {
-        switch ($name) {
-            case 'files':
-                return $value;
-
-            case 'parsedbody':
-                if ($value && (!is_array($value) || !is_object($value)))
-                    throw new Exception('parsed body can only be a null, a
-                        string or an object');
-
-            default:
-                return parent::validate($name, $value);
+        foreach ($defaults as $k=>$v) {
+            if (isset($init[$k])) {
+                $defaults[$k] = $init[$k];
+            } else {
+                $init[$k] = $v;
+            }
         }
+                
+        parent::__construct($init);
+        
+        $this->attributes = new Collection([
+            'env'    => $defaults['env'],
+            'get'    => $defaults['get'],
+            'post'   => $defaults['post'],
+            'cookie' => $defaults['cookie'],
+            'files'  => $defaults['files'],
+        ]);
     }
-
+    
+    function __clone()
+    {
+        parent::__clone();
+        $this->attributes['env'] = clone $this->attributes['env'];
+    }    
+    
     /**
      * Retrieve server parameters.
      *
@@ -118,7 +104,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getServerParams()
     {
-        return $this->server;
+        return $this->attributes['env']->toArray();
     }
 
     /**
@@ -133,11 +119,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getCookieParams()
     {
-        $para = [];
-        foreach($this->cookies as $cookie) {
-            $para[$cookie->getName()] = $cookie->getValue();
-        }
-        return $para;
+        return $this->attributes['cookie'];
     }
 
     /**
@@ -159,13 +141,10 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function withCookieParams(array $cookies)
     {
-        if ($cookies === $this->getCookieParams())
-            return $this;
-
-        $cookies = array_merge($this->getCookieParams(), $cookies);
-
         $clone = clone $this;
-        $clone->cookies = Cookie::createFromArray($cookies);
+        $old = $clone->attributes['cookies'];
+        $clone->attributes['cookies'] = array_merge($old, $cookies);
+        
         return $clone;
     }
 
@@ -183,7 +162,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getQueryParams()
     {
-        return $this->query;
+        return $this->attributes['get'];
     }
 
     /**
@@ -210,12 +189,10 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function withQueryParams(array $query)
     {
-        $query = $this->validate('query', $query);
-        if ($query === $this->query)
-            return $this;
-
         $clone = clone $this;
-        $clone->query = $query;
+        $old = $clone->attributes['query'];
+        $clone->attributes['query'] = array_merge($old, $query);
+        
         return $clone;
     }
 
@@ -233,7 +210,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getUploadedFiles()
     {
-        return $this->files;
+        return $this->attributes['files'];
     }
 
     /**
@@ -249,13 +226,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function withUploadedFiles(array $uploadedFiles)
     {
-        $uploadedFiles = $this->validate('files', $uploadedFiles);
-        if ($uploadedFiles === $this->files)
-            return $this;
-
-        $clone = clone $this;
-        $clone->files = $uploadedFiles;
-        return $clone;
+        # todo -- process uploaded files
     }
 
     /**
@@ -275,7 +246,7 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getParsedBody()
     {
-        return $this->post;
+        return $this->attributes['post'];
     }
 
     /**
@@ -308,13 +279,10 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function withParsedBody($data)
     {
-        $data = $this->validate('parsedbody', $data);
-
-        if ($data === $this->post)
-            return $this;
-
         $clone = clone $this;
-        $clone->post = $data;
+        $old = $clone->attributes['post'];
+        $clone->attributes['post'] = array_merge($old, $data);
+        
         return $clone;
     }
 
@@ -331,7 +299,8 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getAttributes()
     {
-        return $this->attributes;
+        # return array_merge($this->files, $this->get, $this->post, $this->cookie);
+        return $this->attributes->toArray();
     }
 
     /**
@@ -351,9 +320,20 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function getAttribute($name, $default = null)
     {
-        return array_key_exists($name, $this->attributes) ?
-                    $this->attributes[$name] :
-                    $default;
+        // if (isset($this->cookies[$name]))
+//             return $this->cookies[$name];
+//             
+//         if (isset($this->post[$name]))
+//             return $this->post[$name];
+// 
+//         if (isset($this->get[$name]))
+//             return $this->get[$name];
+// 
+//         if (isset($this->files[$name]))
+//             return $this->files[$name];
+//             
+//         return $this->env->get($name, $default);
+        return $this->attributes->get($name, $default);
     }
 
     /**
@@ -373,11 +353,9 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function withAttribute($name, $value)
     {
-        if ($value === $this->getAttribute($name))
-            return $this;
-
         $clone = clone $this;
-        $clone->attributes[$name] = $value;
+        $this->attributes[$name] =  $value;
+        
         return $clone;
     }
 
@@ -397,11 +375,12 @@ class ServerRequest extends Request implements ServerRequestInterface
      */
     public function withoutAttribute($name)
     {
-        if (!array_key_exists($name, $this->attributes))
+        if (!$this->attributes->has($name))
             return $this;
-
+            
         $clone = clone $this;
-        unst($clone->attributes[$name]);
+        $clone->attributes->remove($name);
+                
         return $clone;
     }
 }

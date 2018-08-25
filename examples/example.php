@@ -29,15 +29,14 @@ class Controller
     function defaultMethod($request, $response, $args)
     {
         $c = new IrfanTOOR\Console();
-
+        
         ob_start();
         $c->write($request->getMethod(), 'blue');
         $c->write(' : ', 'yellow');
         $c->writeln('Hello World!', 'red');
         $contents = ob_get_clean();
 
-        $stream = $response->getBody();
-        $stream->write($contents . print_r($args, 1));
+        $response->write($contents . print_r($args, 1));
 
         return $response->withStatus(666, 'Tah Dah!');
     }
@@ -47,20 +46,30 @@ $ie = new Engine([
     'debug' => [
         'level' => 2,
     ],
+    
+    ''
 ]);
 
-$ie->addRoute('GET', '/', function($request, $response){
-    $stream = $response->getBody();
-    $stream->write($request->getMethod() . ': Hello World!');
-    return $response;
-});
 
-$ie->addRoute('SMART', '/', 'controller');
+$request = $ie->ServerRequest();
+$response = $ie->Response();
+$method = $request->getMethod();
 
-$ie->addRoute('ANY', '.*', function($request, $response){
-    $stream = $response->getBody();
-    $stream->write($request->getMethod() . ':default' );
-    return $response;
-});
+switch($method) {
+    case 'GET':
+        $response->write($method . ': Hello World!');
+        break;
+    
+    case 'SMART':
+        $c = new Controller($ie);
+        $args = explode('/',$request->getUri()->getBasePath());
+        $response = $c->defaultMethod($request, $response, $args);
+        break;
+        
+    default:
+        $response->write($method . ': default');
+        break;
+}
 
-$ie->run();
+$response->send();
+

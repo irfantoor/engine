@@ -1,38 +1,24 @@
 <?php
 
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamIterface;
-use IrfanTOOR\Engine\Exception;
+use IrfanTOOR\Engine\Http\Exception;
 use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Factory;
-use IrfanTOOR\Engine\Http\Factory\ResponseFactory;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Response;
-use IrfanTOOR\Engine\Http\Stream;
-use IrfanTOOR\Engine\Http\ResponseStatus;
 
 use PHPUnit\Framework\TestCase;
 
 class ResponseTest extends TestCase
 {
     function getResponse(
-        $status  = Response::STATUS_OK,
-        $headers = null,
-        $body    = null
+        $status  = 200,
+        $headers = [],
+        $body    = ''
     ){
-        $response = new Response($status);
-
-        if ($headers) {
-            foreach ($headers as $key => $value) {
-                $response = $response->withHeader($key, $name);
-            }
-        }
-
-        if (null !== $body) {
-            $response = $response->withBody($body);
-        }
-
-        return $response;
+        return new Response([
+            'status'  => $status,
+            'headers' => $headers,
+            'body'    => $body,
+        ]);
     }
 
     function testResponseInstance()
@@ -45,52 +31,59 @@ class ResponseTest extends TestCase
     function testDefaultResponseStatus()
     {
         $response = $this->getResponse();
-        $this->assertEquals(Response::STATUS_OK, $response->getStatusCode());
+        $status = $response->getStatusCode();
+        $this->assertEquals(200, $status);
+        $this->assertEquals('OK', $response->getReasonPhrase());
     }
 
     function testHeaders()
     {
         $response = $this->getResponse();
-        $this->assertTrue(is_array($response->getHeaders()));
+        $headers = $response->getHeaders();
+        $this->assertTrue(is_array($headers));
+        
+        foreach($headers as $k => $v) {
+            $this->assertTrue(is_array($v));
+        }
+
         $response = $response->withHeader('alfa', 'beta');
-        $this->assertEquals(['alfa' => ['beta']], $response->getHeaders());
+        $this->assertEquals(['beta'], $response->getHeader('ALFA'));
+        $this->assertEquals(['alfa' =>['beta']], $response->getHeaders());
     }
 
     function testBody()
     {
         $response = $this->getResponse();
-        $this->assertInstanceOf(
-            Psr\Http\Message\StreamInterface::class,
-            $response->getBody()
-        );
+        $this->assertEquals('', $response->getBody());
     }
 
     function testDefaults()
     {
         $response = $this->getResponse();
-
-        $this->assertEquals(Response::STATUS_OK, $response->getStatusCode());
-        $this->assertInstanceOf(
-            Psr\Http\Message\StreamInterface::class,
-            $response->getBody()
-        );
+        
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals([], $response->getHeaders());
+        $this->assertEquals('', $response->getBody());
     }
 
-    function testParameterInitialization()
-    {
-        $response = new Response(Response::STATUS_NOT_FOUND);
-
-        $this->assertEquals(
-            Response::STATUS_NOT_FOUND,
-            $response->getStatusCode()
-        );
-    }
+//     function testParameterInitialization()
+//     {
+//         $response = new Response([
+//             'status' => 'NOT_FOUND',
+//         ]);
+// 
+//         $this->assertEquals(404, $response->get('status'));
+//     }
 
     function testWrite()
     {
-        $response = (new Response())
-                        ->write('Hello World!');
-
-        $this->assertEquals('Hello World!', (string) $response->getBody());
+        $response = new Response();
+        $response->write('Hello');
+        $this->assertEquals('Hello', $response->getBody());
+        $response->write(' ');
+        $this->assertEquals('Hello ', $response->getBody());
+        $response->write('World!');
+        $this->assertEquals('Hello World!', $response->getBody());
     }
 }

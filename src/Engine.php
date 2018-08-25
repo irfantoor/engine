@@ -2,45 +2,36 @@
 
 namespace IrfanTOOR;
 
+use Closure;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
 use IrfanTOOR\Debug;
-// use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Response;
-// use IrfanTOOR\Engine\Http\Uri;
-// use IrfanTOOR\Engine\Http\Stream;
-use IrfanTOOR\Engine\Router;
 
-class Engine extends Collection
+class Engine
 {
-    const VERSION = '1.0';
-
-    protected static $instance;
-    protected $initialized;
     protected $config;
     protected $container;
-    protected $default_classes;
+    
+//     protected $middleware_stack = [];
+//     protected $session;
+    protected static $default_classes = [
+        'Cookie'         => 'IrfanTOOR\Engine\Http\Cookie',
+        'Environment'    => 'IrfanTOOR\Engine\Http\Environment',
+        'Request'        => 'IrfanTOOR\Engine\Http\Request',
+        'Response'       => 'IrfanTOOR\Engine\Http\Response',
+        'ServerRequest'  => 'IrfanTOOR\Engine\Http\ServerRequest',
+        'Stream'         => 'IrfanTOOR\Engine\Http\Stream',
+        'UploadedFile'   => 'IrfanTOOR\Engine\Http\UploadedFile',
+        'Uri'            => 'IrfanTOOR\Engine\Http\Uri',
+    ];
 
     function __construct($config=[])
     {
-        static::$instance = $this;
-
-        $this->default_classes = [
-            'cookie'         => 'IrfanTOOR\Engine\Http\Cookie',
-            'environment'    => 'IrfanTOOR\Engine\Http\Environment',
-            'request'        => 'IrfanTOOR\Engine\Http\Request',
-            'response'       => 'IrfanTOOR\Engine\Http\Response',
-            'serverrequest'  => 'IrfanTOOR\Engine\Http\ServerRequest',
-            'stream'         => 'IrfanTOOR\Engine\Http\Stream',
-            'uploaded_file'  => 'IrfanTOOR\Engine\Http\UploadedFile',
-            'uri'            => 'IrfanTOOR\Engine\Http\Uri',
-
-            'router'         => 'IrfanTOOR\Engine\Router',
-            'session'        => 'App\Model\Session',
-        ];
-
         $this->config = new Collection($config);
+
+        # Set default timezone
+        date_default_timezone_set($this->config("timezone", "Europe/Paris"));
 
         $dl = $this->config('debug.level', 0);
         if ($dl) {
@@ -51,11 +42,6 @@ class Engine extends Collection
 
         $this->data = $this->config('data', []);
         $this->container = new Container();
-    }
-
-    public function config($id, $default = null)
-    {
-        return $this->config->get($id, $default);
     }
 
     /**
@@ -79,13 +65,12 @@ class Engine extends Collection
 
         $class = $this->config('classes.' . $method, null);
         if (!$class) {
-            $class = $this->default_classes[$method] ?: null;
+            $class = self::$default_classes[$method] ?: null;
         }
 
         if ($class) {
-            #throw new \BadMethodCallException("$class");
             $class = '\\' . $class;
-            $class = new $class;
+            $class = new $class();            
             $this->container->set($method, $class);
             return $class;
         }
@@ -93,62 +78,17 @@ class Engine extends Collection
         throw new \BadMethodCallException("Method $method is not a valid method");
     }
 
-    function addRoute($method, $path, $handler)
+    public function config($id, $default = null)
     {
-        $router = $this->router();
-        $router->addRoute($method, $path, $handler);
+        return $this->config->get($id, $default);
     }
-
-    function run()
+    
+    function init()
     {
-        $request  = $this->serverrequest();
-        $response = $this->response();
-        $router   = $this->router();
+        $request  = $this->ServerRequest();
         $uri      = $request->getUri();
-        $path     = $uri->getPath();
-        $basepath = rtrim(ltrim($path, '/'), '/');
+        $basepath = $uri->getBasePath();
         $args     = explode('/', htmlspecialchars($basepath));
-
-        // extract processed route
-        extract(
-            $router->process($request->getMethod(), $path)
-        );
-
-        switch ($type) {
-            case 'closure':
-                $response = $handler($request, $response, $args);
-                break;
-
-            case 'string':
-                if (($pos = strpos($handler, '@')) !== FALSE) {
-                    $method = substr($handler, 0, $pos);
-                    $cname  = substr($handler, $pos + 1);
-                } else {
-                    $method = 'defaultMethod';
-                    $cname  = $handler;
-                }
-                $class = new $cname($this);
-
-                if (!method_exists($class, $method))
-                    $method  = 'defaultMethod';
-
-                $response = $class->$method($request, $response, $args);
-                break;
-
-            default:
-                $stream = $response->getBody();
-                $stream->write('no route defined!');
-                $response = $response
-                    ->withStatus(Response::STATUS_NOT_FOUND);
-        }
-
-        $this->finalize($request, $response, $args)->send();
-    }
-
-    function finalize($request, $response, $args)
-    {
-        # This function can be overriden in the extended classes
-        # to do some finalization like logging etc.
-        return $response;
+        $this->container->set('args', $args);
     }
 }
