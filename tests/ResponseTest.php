@@ -25,51 +25,46 @@ class ResponseTest extends TestCase
     {
         $response = $this->getResponse();
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $response);
+        $this->assertInstanceOf(Psr\Http\Message\ResponseInterface::class, $response);
     }
 
     function testDefaultResponseStatus()
     {
         $response = $this->getResponse();
-        $status = $response->get('status');
+        $status = $response->getStatusCode();
         $this->assertEquals(200, $status);
-        $this->assertEquals('OK', $response->phrase($status));
+        $this->assertEquals('OK', $response->getReasonPhrase());
     }
 
     function testHeaders()
     {
         $response = $this->getResponse();
-        $headers = $response->get('headers');
-        $this->assertInstanceOf(
-            IrfanTOOR\Engine\Http\Headers::class,
-            $headers
-        );
+        $headers = $response->getHeaders();
+        $this->assertTrue(is_array($headers));
         
         foreach($headers as $k => $v) {
             $this->assertTrue(is_array($v));
         }
 
-        $response->get('headers')->set('alfa', 'beta');
-        $this->assertEquals(['beta'], $response->get('headers')->get('ALFA'));
-        $this->assertEquals(
-            ['alfa' =>['beta']], 
-            $response->get('headers')->toArray()
-        );
+        $response = $response->withHeader('alfa', 'beta');
+        $this->assertEquals(['beta'], $response->getHeader('ALFA'));
+        $this->assertEquals(['alfa' =>['beta']], $response->getHeaders());
     }
 
     function testBody()
     {
         $response = $this->getResponse();
-        $this->assertEquals('', $response->get('body'));
+        $this->assertEquals('', $response->getBody());
     }
 
     function testDefaults()
     {
         $response = $this->getResponse();
         
-        $this->assertEquals('1.1', $response->get('version'));
-        $this->assertEquals(200, $response->get('status'));
-        $this->assertEquals([], $response->get('headers')->toArray());
-        $this->assertEquals('', $response->get('body'));
+        $this->assertEquals('1.1', $response->getProtocolVersion());
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertEquals([], $response->getHeaders());
+        $this->assertEquals('', $response->getBody());
     }
 
 //     function testParameterInitialization()
@@ -85,10 +80,10 @@ class ResponseTest extends TestCase
     {
         $response = new Response();
         $response->write('Hello');
-        $this->assertEquals('Hello', $response->get('body'));
+        $this->assertEquals('Hello', $response->getBody());
         $response->write(' ');
-        $this->assertEquals('Hello ', $response->get('body'));
+        $this->assertEquals('Hello ', $response->getBody());
         $response->write('World!');
-        $this->assertEquals('Hello World!', $response->get('body'));
+        $this->assertEquals('Hello World!', $response->getBody());
     }
 }

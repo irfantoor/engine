@@ -91,11 +91,15 @@ class UploadedFile implements UploadedFileInterface
             $options['size'] = $size;
         }
 
-        try {
-            $fp = fopen($file, 'r');
-            $this->stream = Stream::factory($fp, $options);
-            $this->size = $size ?: $this->stream->getSize();
-        } catch(\Exception $e) {
+        if ($file) {
+            try {
+                $fp = fopen($file, 'r');
+                $this->stream = Stream::factory($fp, $options);
+                $this->size = $size ?: $this->stream->getSize();
+            } catch(\Exception $e) {
+                $this->error = UPLOAD_ERR_NO_FILE;
+            }
+        } else {
             $this->error = UPLOAD_ERR_NO_FILE;
         }
     }

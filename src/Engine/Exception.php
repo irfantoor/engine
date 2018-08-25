@@ -2,6 +2,8 @@
 
 namespace IrfanTOOR\Engine;
 
+use IrfanTOOR\Engine\Logger;
+
 class Exception extends \Exception
 {
     public function __construct($message, $level = 0)

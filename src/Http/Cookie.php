@@ -9,6 +9,19 @@ use IrfanTOOR\Collection;
  */
 class Cookie extends Collection
 {
+    public static function createFromArray($data = [])
+    {
+        $cookies = [];
+        foreach($data as $k=>$v) {
+            $cookies[] = new static([
+                'name' => $k,
+                'value' => $v,
+            ]);
+        }
+        
+        return $cookies;
+    }
+    
     /**
      * Constructs a cookie from provided key, value pair(s) and options
      */

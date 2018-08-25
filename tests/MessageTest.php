@@ -9,24 +9,19 @@ class MessageTest extends TestCase
     {
         $m = new Message();
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Message::class, $m);
-        $this->assertInstanceOf(IrfanTOOR\Collection::class, $m);
     }
     
     function testDefaultValues()
     {
         $m = new Message();
-        $this->assertEquals('1.1', $m->get('version'));
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Stream::class, $m->get('body'));
-        $this->assertEquals('', $m->get('body'));
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Headers::class, $m->get('headers'));
+        $this->assertEquals('1.1', $m->getProtocolVersion());
         $this->assertEquals([], $m->getHeaders());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Stream::class, $m->getBody());
+        $this->assertEquals('', $m->getBody());        
     }
 
     function testGetHeaders()
     {
-        $m = new Message();
-        $this->assertEquals([], $m->getHeaders());
-        
         $h = [
             'content-type' => 'plain/text',
             'engine'       => 'ie',
@@ -46,8 +41,9 @@ class MessageTest extends TestCase
     {
         $m = new Message();
         $this->assertEquals([], $m->getHeader('content-type'));
-        $this->assertEquals('unknown', $m->getHeader('content-type', 'unknown'));
-        $this->assertNull($m->getHeader('content-type', null));
+        $this->assertEquals(['unknown'], $m->getHeader('content-type', 'unknown'));
+        $this->assertEquals(['unknown'], $m->getHeader('content-type', ['unknown']));
+        $this->assertEquals([], $m->getHeader('content-type', null));
         
         $m = new Message(
             [
@@ -61,24 +57,26 @@ class MessageTest extends TestCase
         $this->assertEquals(['plain/text'], $m->getHeader('content-type', 'unknown'));
     }
 
-    function tesSetHeaders()
+    function testWithHeaders()
     {
         $m = new Message();
-        $m->setHeader('Content-Type', 'plain/text');
-        $this->assertEquals(['plain/text'], $m->getHeader('content-type'));
-        $this->assertEquals(['plain/text'], $m->getHeader('content-type', 'unknown'));
+        $m2 = $m->withHeader('Content-Type', 'plain/text');
+        $this->assertEquals(['plain/text'], $m2->getHeader('content-type'));
+        $this->assertEquals(['plain/text'], $m2->getHeader('content-type', 'unknown'));
         
-        $m->setHeader('Content-Type', 'utf8');
-        $this->assertEquals(['utf8'], $m->getHeader('content-type'));
+        $m3 = $m2->withHeader('Content-Type', 'utf8');
+        $this->assertEquals(['utf8'], $m3->getHeader('content-type'));
+        $this->assertEquals(['plain/text'], $m2->getHeader('content-type'));
+        $this->assertEquals([], $m->getHeader('content-type'));
     }
     
     function testAddHeader()
     {
         $m = new Message();
-        $m->addHeader('Content-Type', 'plain/text');
-        $this->assertEquals(['plain/text'], $m->getHeader('content-type'));
-        $m->addHeader('Content-Type', 'utf8');
-        $this->assertEquals(['plain/text', 'utf8'], $m->getHeader('content-type'));
+        $m2 = $m->withAddedHeader('Content-Type', 'plain/text');
+        $this->assertEquals(['plain/text'], $m2->getHeader('content-type'));
+        $m3 = $m2->withAddedHeader('Content-Type', 'utf8');
+        $this->assertEquals(['plain/text', 'utf8'], $m3->getHeader('content-type'));
     }
     
     function testRemoveHeader()
@@ -91,8 +89,9 @@ class MessageTest extends TestCase
             ]
         );    
         
-        $m->removeHeader('Content-Type');
-        $this->assertEquals([], $m->getHeader('content-type'));            
+        $m2 = $m->withoutHeader('Content-Type');
+        $this->assertEquals([], $m2->getHeader('content-type'));
+        $this->assertEquals(['plain/text'], $m->getHeader('content-type'));            
     }
     
     function testGetHeaderLine()
@@ -107,7 +106,7 @@ class MessageTest extends TestCase
         
         $this->assertEquals('Content-type: plain/text', $m->getHeaderLine('content-type'));
         
-        $m->addHeader('Content-Type', 'Charset: utf8');
-        $this->assertEquals('Content-Type: plain/text, Charset: utf8', $m->getHeaderLine('content-type'));   
+        $m2 = $m->withAddedHeader('Content-Type', 'Charset: utf8');
+        $this->assertEquals('Content-Type: plain/text, Charset: utf8', $m2->getHeaderLine('content-type'));   
     }
 }

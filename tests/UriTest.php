@@ -13,163 +13,162 @@ class UriTest extends TestCase
     {
         $uri = new Uri;
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Uri::class, $uri);
-        $this->assertInstanceOf(IrfanTOOR\Collection::class, $uri);
     }
 
     function testDefault()
     {
         $uri = new Uri;
 
-        $this->assertEquals('http', $uri->get('scheme'));
-        $this->assertEquals('', $uri->get('user_info'));
-        $this->assertEquals('localhost', $uri->get('host'));
-        $this->assertEquals(null, $uri->get('port'));
-        $this->assertEquals('/', $uri->get('path'));
-        $this->assertEquals('', $uri->get('query'));
-        $this->assertEquals('', $uri->get('fragment'));
-        $this->assertEquals('localhost', $uri->get('authority'));
+        $this->assertEquals('http', $uri->getScheme());
+        $this->assertEquals('', $uri->getUserInfo());
+        $this->assertEquals('localhost', $uri->getHost());
+        $this->assertEquals(null, $uri->getPort());
+        $this->assertEquals('/', $uri->getPath());
+        $this->assertEquals('', $uri->getQuery());
+        $this->assertEquals('', $uri->getFragment());
+        $this->assertEquals('localhost', $uri->getAuthority());
     }
     
     function testHttpsDefault()
     {
         $uri = new Uri('https://example.com/');
 
-        $this->assertEquals('https', $uri->get('scheme'));
-        $this->assertEquals('', $uri->get('user_info'));
-        $this->assertEquals('example.com', $uri->get('host'));
-        $this->assertEquals(null, $uri->get('port'));
-        $this->assertEquals('/', $uri->get('path'));
-        $this->assertEquals('', $uri->get('query'));
-        $this->assertEquals('', $uri->get('fragment'));
-        $this->assertEquals('example.com', $uri->get('authority'));
+        $this->assertEquals('https', $uri->getScheme());
+        $this->assertEquals('', $uri->getUserInfo());
+        $this->assertEquals('example.com', $uri->getHost());
+        $this->assertEquals(null, $uri->getPort());
+        $this->assertEquals('/', $uri->getPath());
+        $this->assertEquals('', $uri->getQuery());
+        $this->assertEquals('', $uri->getFragment());
+        $this->assertEquals('example.com', $uri->getAuthority());
     }
     
     function testScheme()
     {
         $uri = new Uri('example.com');
-        $this->assertEquals('http', $uri->get('scheme'));
+        $this->assertEquals('http', $uri->getScheme());
         
         $uri = new Uri('http://example.com');
-        $this->assertEquals('http', $uri->get('scheme'));
+        $this->assertEquals('http', $uri->getScheme());
         
         $uri = new Uri('ftp://example.com');
-        $this->assertEquals('ftp', $uri->get('scheme'));
+        $this->assertEquals('ftp', $uri->getScheme());
         
         $uri = new Uri('example.com:443');
-        $this->assertEquals('https', $uri->get('scheme'));
+        $this->assertEquals('https', $uri->getScheme());
         
         $uri = new Uri('http://example.com:443');
-        $this->assertEquals('http', $uri->get('scheme'));        
+        $this->assertEquals('http', $uri->getScheme());
     }
     
     function testUserInfo()
     {
         $uri = new Uri('example.com');
-        $this->assertEquals('', $uri->get('user_info'));
+        $this->assertEquals('', $uri->getUserInfo());
         
         $uri = new Uri('http://user@example.com');
-        $this->assertEquals('', $uri->get('user_info'));
+        $this->assertEquals('', $uri->getUserInfo());
 
         $uri = new Uri('http://user:@example.com');
-        $this->assertEquals('', $uri->get('user_info'));
+        $this->assertEquals('', $uri->getUserInfo());
 
         $uri = new Uri('http://:pass@example.com');
-        $this->assertEquals('', $uri->get('user_info'));
+        $this->assertEquals('', $uri->getUserInfo());
         
         $uri = new Uri('http://user:pass@example.com');
-        $this->assertEquals('user:pass', $uri->get('user_info'));
+        $this->assertEquals('user:pass', $uri->getUserInfo());
         
         $uri = new Uri('user:pass@example.com');
-        $this->assertEquals('user:pass', $uri->get('user_info'));
+        $this->assertEquals('user:pass', $uri->getUserInfo());
     }
     
     function testHost()
     {    
         $uri = new Uri('example.com');        
-        $this->assertEquals('example.com', $uri->get('host'));
+        $this->assertEquals('example.com', $uri->getHost());
 
         $uri = new Uri('example.com:80');
-        $this->assertEquals('example.com', $uri->get('host'));
+        $this->assertEquals('example.com', $uri->getHost());
         
         $uri = new Uri('http://example.com');
-        $this->assertEquals('example.com', $uri->get('host'));
+        $this->assertEquals('example.com', $uri->getHost());
         
         $uri = new Uri('example.com:443');
-        $this->assertEquals('example.com', $uri->get('host'));
+        $this->assertEquals('example.com', $uri->getHost());
         
         $uri = new Uri('http://example.com:443');
-        $this->assertEquals('example.com', $uri->get('host'));
+        $this->assertEquals('example.com', $uri->getHost());
     }
     
     function testPort()
     {
         $uri = new Uri('example.com');
-        $this->assertEquals(null, $uri->get('port'));
+        $this->assertEquals(null, $uri->getPort());
 
         $uri = new Uri('example.com:80');
-        $this->assertEquals(null, $uri->get('port'));
+        $this->assertEquals(null, $uri->getPort());
         
         $uri = new Uri('http://example.com');
-        $this->assertEquals(null, $uri->get('port'));
+        $this->assertEquals(null, $uri->getPort());
         
         $uri = new Uri('example.com:443');
-        $this->assertEquals(null, $uri->get('port'));
+        $this->assertEquals(null, $uri->getPort());
         
         $uri = new Uri('http://example.com:443');
-        $this->assertEquals(443, $uri->get('port'));
+        $this->assertEquals(443, $uri->getPort());
         
         $uri = new Uri('https://example.com:80');
-        $this->assertEquals(80, $uri->get('port'));
+        $this->assertEquals(80, $uri->getPort());
     }
     
     function testPath()
     {
         $uri = new Uri('example.com');
-        $this->assertEquals('', $uri->get('path'));
+        $this->assertEquals('', $uri->getPath());
 
         $uri = new Uri('example.com:80/');
-        $this->assertEquals('/', $uri->get('path'));
+        $this->assertEquals('/', $uri->getPath());
         
         $uri = new Uri('http://example.com/hello/world');
-        $this->assertEquals('/hello/world', $uri->get('path'));
+        $this->assertEquals('/hello/world', $uri->getPath());
 
         $uri = new Uri('http://example.com/hello/world/');
-        $this->assertEquals('/hello/world/', $uri->get('path'));
+        $this->assertEquals('/hello/world/', $uri->getPath());
     }
     
     function testQuery()
     {
         $uri = new Uri('example.com?');
-        $this->assertEquals('', $uri->get('query'));
+        $this->assertEquals('', $uri->getQuery());
         $uri = new Uri('example.com?hello_world');
-        $this->assertEquals('hello_world', $uri->get('query'));
+        $this->assertEquals('hello_world', $uri->getQuery());
         $uri = new Uri('example.com?hello=world&go=google');
-        $this->assertEquals('hello=world&go=google', $uri->get('query'));        
+        $this->assertEquals('hello=world&go=google', $uri->getQuery());
     }
 
     function testFragment()
     {
         $uri = new Uri('example.com?#');
-        $this->assertEquals('', $uri->get('fragment'));
+        $this->assertEquals('', $uri->getFragment());
         $uri = new Uri('example.com?test=again&#hello-world');
-        $this->assertEquals('hello-world', $uri->get('fragment'));
+        $this->assertEquals('hello-world', $uri->getFragment());
     }
 
     function testParsing()
     {
         $uri = new Uri("https://user:password@sub.host.com:8080/path/to/some/place/?hello=world#one");
 
-        $this->assertEquals('https', $uri->get('scheme'));
-        $this->assertEquals('user:password', $uri->get('user_info'));
-        $this->assertEquals('sub.host.com', $uri->get('host'));
-        $this->assertEquals(8080, $uri->get('port'));
-        $this->assertEquals('/path/to/some/place/', $uri->get('path'));
-        $this->assertEquals('hello=world', $uri->get('query'));
-        $this->assertEquals('one', $uri->get('fragment'));
-        $this->assertEquals('user:password@sub.host.com:8080', $uri->get('authority'));
+        $this->assertEquals('https', $uri->getScheme());
+        $this->assertEquals('user:password', $uri->getUserInfo());
+        $this->assertEquals('sub.host.com', $uri->getHost());
+        $this->assertEquals(8080, $uri->getPort());
+        $this->assertEquals('/path/to/some/place/', $uri->getPath());
+        $this->assertEquals('hello=world', $uri->getQuery());
+        $this->assertEquals('one', $uri->getFragment());
+        $this->assertEquals('user:password@sub.host.com:8080', $uri->getAuthority());
         
         $uri = new Uri("https://user:password@sub.host.com:443/path/to/some/place/?hello=world#one");
-        $this->assertNull($uri->get('port'));
+        $this->assertNull($uri->getPort());
     }
 
     /**

@@ -1,11 +1,7 @@
 <?php
 
-use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Factory;
-use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\Uri;
-use IrfanTOOR\Engine\Http\Validate;
 
 use PHPUnit\Framework\TestCase;
 
@@ -23,19 +19,16 @@ class RequestTest extends TestCase
             IrfanTOOR\Engine\Http\Request::class,
             $request
         );
+        
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Request::class, $request);
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Message::class, $request);
     }
 
     function testRequestHeaders()
     {
         $request = $this->getRequest();
-        $headers = $request->get('headers');
-        $this->assertInstanceOf(
-            IrfanTOOR\Engine\Http\Headers::class, 
-            $headers
-        );
-        $this->assertTrue(is_array($headers->toArray()));
-        
+        $headers = $request->getHeaders();
+        $this->assertTrue(is_array($headers));
         foreach($headers as $k => $v) {
             $this->assertTrue(is_array($v));
         }
@@ -44,39 +37,55 @@ class RequestTest extends TestCase
     function testDefaultRequestMethod()
     {
         $request = $this->getRequest();
-        $this->assertEquals('GET', $request->get('method'));
+        $this->assertEquals('GET', $request->getMethod());
     }
 
     function testRequestWithMethod() {
         $request = $this->getRequest();
-        $request->set('method', 'POST');
-        $this->assertEquals('POST', $request->get('method'));
+        $r2 = $request->withMethod('POST');
+        $this->assertEquals('GET', $request->getMethod());
+        $this->assertEquals('POST', $r2->getMethod());
     }
 
-    function testRequestUri()
+    function testRequestGetUri()
     {
         $request = $this->getRequest();
         $this->assertInstanceOf(
             IrfanTOOR\Engine\Http\Uri::class,
-            $request->get('uri')
+            $request->getUri()
         );
     }
 
-    function testRequestClone()
+    function testRequestDefaultUri()
+    {
+        $request = $this->getRequest();
+        $uri = $request->getUri();
+        
+        $this->assertEquals('http://localhost/', (string) $uri);
+    }
+    
+    function testRequestWithUri()
+    {
+        $request = $this->getRequest();
+        $r2 = $request->withUri(new Uri('https://example.com:80/'));
+        
+        $this->assertEquals('https://example.com:80/', (string) $r2->getUri());
+    
+    }
+    
+    function testRequestCloning()
     {
         $request1 = $this->getRequest();
         $request2 = clone $request1;
         $this->assertEquals($request1, $request2);
         $this->assertNotSame($request1, $request2);
         
-        $uri1 = $request1->get('uri');
-        $uri2 = $request2->get('uri');
+        $uri1 = $request1->getUri();
+        $uri2 = $request2->getUri();
+        $uri3 = $request1->getUri();
+        
         $this->assertEquals($uri1, $uri2);
         $this->assertNotSame($uri1, $uri2);
-
-        $h1 = $request1->get('headers');
-        $h2 = $request2->get('headers');
-        $this->assertEquals($h1, $h2);
-        $this->assertNotSame($h1, $h2);
+        $this->assertNotSame($uri1, $uri3);
     }
 }

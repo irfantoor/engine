@@ -1,7 +1,0 @@
-2018-06-12 14:46:29 LEVEL-0 Test Exception, file: tests/ExceptionTest.php, line: 11
-2018-06-12 14:46:29 LEVEL-0 rewind failure, file: Extensions/Stream.php, line: 153
-2018-06-12 18:44:51 LEVEL-0 Test Exception, file: tests/ExceptionTest.php, line: 11
-2018-06-12 18:44:51 LEVEL-0 rewind failure, file: Extensions/Stream.php, line: 153
-2018-06-12 19:28:30 LEVEL-0 rewind failure, file: Extensions/Stream.php, line: 173
-2018-06-12 19:28:39 LEVEL-0 rewind failure, file: Extensions/Stream.php, line: 172
-2018-06-12 19:28:43 LEVEL-0 rewind failure, file: Extensions/Stream.php, line: 172

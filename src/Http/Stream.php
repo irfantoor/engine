@@ -29,6 +29,9 @@ class Stream implements StreamInterface
             $stream = new Stream($mixed);
         } elseif (is_object($mixed)) {
             if (is_a($mixed, 'IrfanTOOR\\Engine\\Http\\Stream')) {
+//                 $mixed = (string) $mixed;
+//                 $stream = new Stream(fopen('php://temp', 'w+'));
+//                 $stream->write($mixed);
                 $stream = $mixed;
             } elseif (is_a($mixed, 'ArrayIterator')) {
                 $stream = new Stream(fopen('php://temp', 'w+'));
