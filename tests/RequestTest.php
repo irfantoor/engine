@@ -70,14 +70,14 @@ class RequestTest extends TestCase
         $r2 = $request->withUri(new Uri('https://example.com:80/'));
         
         $this->assertEquals('https://example.com:80/', (string) $r2->getUri());
-    
     }
     
     function testRequestCloning()
     {
         $request1 = $this->getRequest();
         $request2 = clone $request1;
-        $this->assertEquals($request1, $request2);
+        $this->assertEquals((string)$request1->getBody(), (string)$request2->getBody());
+        $this->assertNotEquals($request1, $request2);
         $this->assertNotSame($request1, $request2);
         
         $uri1 = $request1->getUri();

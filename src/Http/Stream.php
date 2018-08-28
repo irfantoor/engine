@@ -16,72 +16,74 @@ class Stream implements StreamInterface
 {
     protected $stream   = null;
     protected $metadata = [];
-    
+
     static function factory($mixed = null, $options = [])
     {
-        if ($mixed === null) {
-            $stream = new Stream(fopen('php://temp', 'w+'));
-        } elseif (is_string($mixed)) {
-            $stream = new Stream(fopen('php://temp', 'w+'));
-            $stream->write($mixed);
-            $stream->rewind();
-        } elseif (is_resource($mixed)) {
-            $stream = new Stream($mixed);
-        } elseif (is_object($mixed)) {
-            if (is_a($mixed, 'IrfanTOOR\\Engine\\Http\\Stream')) {
-//                 $mixed = (string) $mixed;
-//                 $stream = new Stream(fopen('php://temp', 'w+'));
-//                 $stream->write($mixed);
-                $stream = $mixed;
-            } elseif (is_a($mixed, 'ArrayIterator')) {
-                $stream = new Stream(fopen('php://temp', 'w+'));
-                foreach($mixed as $item) {
-                    $stream->write($item);
-                }
-                $stream->rewind();
-            } else {
-                if (method_exists($mixed, '__toString')) {
-                    $mixed = (string) $mixed;
-                    $stream = new Stream(fopen('php://temp', 'w+'));
-                    $stream->write($mixed);
-                    $stream->rewind();
-                } else {
-                    throw new \InvalidArgumentException('Invalid argument mixed');
+        if (is_a($mixed, 'IrfanTOOR\\Engine\\Http\\Stream')) {
+            if (isset($options['metadata'])) {
+                $md =  $options['metadata'];
+                if (is_array($md)) {
+                    foreach($md as $k=>$v) {
+                        $mxied->setMetaData($k, $v);
+                    }
                 }
             }
+            return $mixed;
+        } else {
+            return new Stream($mixed, $options);
         }
-        
+    }
+
+    function __construct($mixed = null, $options = [])
+    {
+        if ($mixed === null) {
+            $this->stream = fopen('php://temp', 'w+');
+        } elseif (is_resource($mixed) || is_a($mixed, 'IrfanTOOR\\Engine\\Http\\Stream')) {
+            $this->stream = $mixed;
+        } elseif (
+            is_string($mixed)
+            || (is_object($mixed) && (method_exists($mixed, '__toString')))
+            ) {
+                $this->stream = fopen('php://temp', 'w+');
+                $this->write((string) $mixed);
+        } elseif (is_a($mixed, 'ArrayIterator')) {
+            $this->stream = fopen('php://temp', 'w+');
+            foreach ($mixed as $v) {
+                $this->write($v);
+            }
+        } else {
+            throw new \InvalidArgumentException('Invalid argument mixed');
+        }
+
         if (isset($options['metadata'])) {
             $md =  $options['metadata'];
             if (is_array($md)) {
                 foreach($md as $k=>$v) {
-                    $stream->setMetaData($k, $v);
+                    $this->setMetaData($k, $v);
                 }
             }
         }
-        
-        if (isset($options['size'])) {
-            $stream->setMetaData('size', $options['size']);
-        }
-        
-        return $stream;
     }
-    
-    function __construct($stream)
-    {
-        if (is_resource($stream)) {
-            $this->stream = $stream;
-        } else {
-            throw new \InvalidArgumentException('invalid argument stream');
-        }
-    }
-    
-    
+
     function __destruct()
     {
         $this->close();
     }
     
+    function __clone()
+    {
+        $pos = $this->tell();
+        $this->rewind();
+        $contents = $this->getContents();
+        $this->seek($pos);
+        
+        $this->stream   = fopen('php://temp', 'w+');
+        $this->write($contents);
+        $this->seek($pos);
+        
+        # $this->metadata = clone $this->metadata;
+    }
+
     /**
      * Reads all data from the stream into a string, from the beginning to end.
      *
@@ -126,11 +128,10 @@ class Stream implements StreamInterface
         # todo
         $stream = $this->stream;
         $this->stream = null;
-        
+
         return $stream;
     }
-    
-    
+
     public function attach(&$stream)
     {
         $this->stream = $stream;
@@ -145,7 +146,7 @@ class Stream implements StreamInterface
     {
         return $this->getMetaData('size');
     }
-    
+
     public function setSize($size)
     {
         $this->setMetaData('size', $size);
@@ -175,7 +176,7 @@ class Stream implements StreamInterface
     {
         if ($this->stream)
             return feof($this->stream);
-            
+
         return true;
     }
 
@@ -260,7 +261,10 @@ class Stream implements StreamInterface
     public function write($string)
     {
         if ($this->isWritable()) {
-            return fwrite($this->stream, $string);
+            $size = $this->getSize();
+            $count = fwrite($this->stream, $string);
+            $this->setSize($size + $count);
+            return $count;
         } else {
             return false;
         }
@@ -329,17 +333,17 @@ class Stream implements StreamInterface
         if (!is_resource($this->stream)) {
             return null;
         }
-        
+
         $fstat = fstat($this->stream);
         $fstat = array_merge(array_slice($fstat, 13), $this->metadata);
-        
+
         if ($key) {
             return isset($fstat[$key]) ? $fstat[$key] : null;
         }
-        
+
         return $fstat;
     }
-    
+
     function setMetaData($k, $v)
     {
         $this->metadata[$k] = $v;

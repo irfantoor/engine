@@ -1,6 +1,6 @@
 Irfan's Engine
 ==============
--
+
 A bare-minimum PHP framework, with the spirit with which the HTTP was invented.
 focussing on the requests and the responses. A Swiss-knife for world-wide-web.
 
@@ -19,7 +19,7 @@ validations, though certain constraints can not be eliminated, which are
 essential for the proper functioning of the underlying system.
 
 Now equiped with a console command ie, so that you can easily initialise
-a basic application framework, create controllers, models, or views etc.
+a basic application.
 
 Note: This documentation is just to get you started, you are encouraged to study
 the code and the examples in the examples folder, which might help you get going
@@ -40,9 +40,9 @@ Note: Irfan's Engine requires PHP 7.0 or newer.
 
 ### 2. Basic Initialisation
 
-Use the console command <strong>ie</strong> to create a basic app framework for 
+Use the console command <strong>ie</strong> to create a basic app for 
 you. When Irfan's Engine is installed, it will create a link to a shell 
-command. Which can be used as follows to initialise the app.
+command. Which can be used as follows to create an app.
 
 ```sh
 $ ./ie app:init
@@ -72,6 +72,7 @@ Here are a few examples :
 ```php
 <?php
 require '/path/to/ ... vendor/autoload.php';
+
 use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Engine\Http\Response;
 
@@ -104,36 +105,6 @@ $name = (new ServerRequest)->getAttribute('name', 'World');
 	->send();
 ```
 
-### Using Engine and routes
-
-```php
-<?php
-...
-$ie = new IrfanTOOR\Engine();
-
-# GET method => http://example.com/...
-$ie->addRoute('GET', '/', function ($request, $response){
-	$response = $response->write('Hello World!');
-	return $response;
-});
-
-# name passed as http://example.com/hello/?name=alfa
-$ie->addRoute('GET', 'hello', function ($request, $response){
-	$name = $request->getAttribute('name', 'World');
-	return $response->write('Hello ' . ucfirst($name) . '!')
-});
-
-
-# ANY allowed method => http://example.com/...
-$ie->addRoute('ANY', '.*', function ($request, $response){
-	return $response
-		->withStatus(404)
-		->write('Error: page not found');
-});
-
-$ie->run();
-```
-
 ### Environment
 
 Environment instance contains the environment variables and the headers passed,
@@ -145,7 +116,12 @@ or as follows, if using without the engine:
 
 ```php
 <?php
+require 'vendor/autoload.php';
+
 use IrfanTOOR\Engine\Http\Environment;
+use IrfanTOOR\Debug;
+
+Debug::enable();
 
 $e = new Environment([
 	'HTTP_HOST' => 'example.com',
@@ -155,6 +131,8 @@ $e = new Environment([
 // Environment is a case sensitive collection
 $host   = $e->get('HTTP_HOST', 'localhost');
 $engine = $e->get('Engine');
+
+Debug::dump([$host, $engine]);
 ```
 
 ### Uri
@@ -194,53 +172,6 @@ $content_type = $response->getHeader('CONTENT-type');
 ...
 ```
 
-###  Router Usage
-
-```php
-<?php
-...
-use IrfanTOOR\Engine\Router;
-
-The router can be independently initialized and used
-$router = new Router();
-$router->setAllowedMethods(['GET', 'POST']);
-
-$router->add('GET', '/',     'Home');
-$router->add('GET', 'hello', 'Hello');
-$router->add('ANY', '.*',    'Default'); # Note any is not a method but a directive.
-...
-$result = router->process('GET', 'http://example.com/?hello=world');
-switch($result['type']) {
-	case 'closure':
-		...
-	case 'string':
-		...
-	default:
-		...
-}
-```
-
-###  Router usage with the Engine
-
-```php
-<?php
-
-require 'path/to/vendor/autoload.php';
-
-$ie = new IrfanTOOR\Engine([
-	'debug' => [
-		'level' => 1
-	]
-]);
-
-$ie->addRoute('GET', '/', function($request, $response){
-	$response->write('OK');
-	return $response;
-});
-
-$ie->run();
-```
-
 ### Creating your config file: path/to/config.php
 
 ```php
@@ -275,11 +206,7 @@ and then this config can be included like this:
 $config = require("path/to/config.php");
 $ie = new IrfanTOOR\Engine($config);
 
-$ie->addRoute('GET', '/', function($request, $response) use($ie){
-	$response->write('Welcome to ' . $ie->config('site.name') . '!');
-});
-
-$ie->run();
+$ie->config('site.name');
 ```
 
 ### Debugging

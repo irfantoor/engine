@@ -1,7 +1,6 @@
 <?php
 
-// require '../vendor/autoload.php';
-require dirname(__DIR__) . '/vendor/autoload.php';
+require 'autoload.php';
 
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Debug;

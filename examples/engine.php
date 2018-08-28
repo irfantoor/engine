@@ -1,6 +1,6 @@
 <?php
 
-require dirname(__DIR__) . '/vendor/autoload.php';
+require 'autoload.php';
 
 $ie = new IrfanTOOR\Engine([
 	'debug' => [

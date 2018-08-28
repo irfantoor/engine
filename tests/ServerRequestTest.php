@@ -42,7 +42,7 @@ class ServerRequestTest extends TestCase
         $r1 = $this->getServerRequest();
         $r2 = clone $r1;
         
-        $this->assertEquals($r2, $r1);
+        $this->assertNotEquals($r2, $r1);
         $this->assertNotSame($r2, $r1);
     }
 }

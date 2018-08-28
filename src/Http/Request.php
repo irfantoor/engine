@@ -2,12 +2,14 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use Psr\Http\Message\UriInterface;
-use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\RequestInterface;
+use Fig\Http\Message\RequestMethodInterface;
 use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Uri;
+use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\UriInterface;
+
 /**
  * Representation of an outgoing, client-side request.
  *
@@ -27,7 +29,7 @@ use IrfanTOOR\Engine\Http\Uri;
  * be implemented such that they retain the internal state of the current
  * message and return an instance that contains the changed state.
  */
-class Request extends Message implements RequestInterface
+class Request extends Message implements RequestInterface, RequestMethodInterface
 {
     protected $method;
     protected $uri;
@@ -37,7 +39,7 @@ class Request extends Message implements RequestInterface
         parent::__construct($init);
         
         $defaults = [
-            'method' => 'GET',
+            'method' => self::METHOD_GET,
             'uri'    => '',
         ];
     

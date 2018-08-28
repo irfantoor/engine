@@ -3,9 +3,9 @@
 namespace IrfanTOOR\Engine\Http;
 
 use IrfanTOOR\Engine\Exception;
+use IrfanTOOR\Engine\Http\Stream;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;
-use IrfanTOOR\Engine\Http\Stream;
 
 class Message implements MessageInterface
 {
@@ -38,7 +38,7 @@ class Message implements MessageInterface
     public function __clone()
     {
         $this->headers = clone $this->headers;
-        $this->body    = Stream::factory($this->body);
+        $this->body = clone $this->body;
     }
     
     /**
@@ -263,7 +263,7 @@ class Message implements MessageInterface
     public function withBody(StreamInterface $body)
     {
         $clone = clone $this;
-        $this->body = new Stream($body);
+        $clone->body = new Stream($body);
         
         return $clone;
     }
@@ -281,5 +281,6 @@ class Message implements MessageInterface
         }
 
         $this->body->write($contents);
+        return $this;
     }
 }

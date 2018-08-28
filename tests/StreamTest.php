@@ -19,14 +19,13 @@ class StreamTest extends TestCase
 
     public function testConstructorInitializesProperties()
     {
-        $handle = fopen('php://temp', 'r+');
+        $handle = fopen('php://temp', 'w+');
         fwrite($handle, 'data');
-        
         $stream = new Stream($handle);
         $this->assertTrue($stream->isReadable());
         $this->assertTrue($stream->isWritable());
         $this->assertTrue($stream->isSeekable());  
-//         $this->assertEquals('php://temp', $stream->getMetadata('uri'));
+        # $this->assertEquals('php://temp', $stream->getMetadata('uri'));
         $this->assertInternalType('array', $stream->getMetadata());
         $this->assertEquals(4, $stream->getSize());
         $this->assertFalse($stream->eof());
@@ -176,6 +175,8 @@ class StreamTest extends TestCase
     {
         $stream = Stream::factory('foo');
         $this->assertInstanceOf('IrfanTOOR\Engine\Http\Stream', $stream);
+        $this->assertEquals('', $stream->getContents());
+        $stream->rewind();
         $this->assertEquals('foo', $stream->getContents());
         $stream->close();
     }
@@ -225,7 +226,10 @@ class StreamTest extends TestCase
 
     public function testCanSetSize()
     {
-        $s = Stream::factory('', ['size' => 10]);
+        $s = Stream::factory('', ['metadata' => ['size' => 10]]);
+        $this->assertEquals(10, $s->getSize());
+        $s = new Stream();
+        $s->setSize(10);
         $this->assertEquals(10, $s->getSize());
     }
 
@@ -233,6 +237,7 @@ class StreamTest extends TestCase
     {
         $a = new \ArrayIterator(['foo', 'bar', '123']);
         $p = Stream::factory($a);
+        $p->rewind();
         $this->assertInstanceOf('IrfanTOOR\Engine\Http\Stream', $p);
         $this->assertEquals('foo', $p->read(3));
         $this->assertFalse($p->eof());
@@ -243,6 +248,20 @@ class StreamTest extends TestCase
         $this->assertEquals('3', $p->getContents());
         $this->assertTrue($p->eof());
         $this->assertEquals(9, $p->tell());
+    }
+    
+    public function testCloneStream()
+    {
+        $s = Stream::factory();
+        $s->write('something');
+        $t = clone $s;
+        
+        $this->assertNotEquals($s, $t);
+        $this->assertNotSame($s, $t);
+        $this->assertEquals((string)$s, (string)$t);
+        
+        $t->write('else');
+        $this->assertNotEquals((string)$s, (string)$t);
     }
 }
 

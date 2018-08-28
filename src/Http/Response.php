@@ -2,10 +2,11 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use Psr\Http\Message\ResponseInterface;
+use Fig\Http\Message\StatusCodeInterface;
 use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Stream;
+use Psr\Http\Message\ResponseInterface;
 
 /**
  * Representation of an outgoing, server-side response.
@@ -22,7 +23,7 @@ use IrfanTOOR\Engine\Http\Stream;
  * be implemented such that they retain the internal state of the current
  * message and return an instance that contains the changed state.
  */
-class Response extends Message Implements ResponseInterface
+class Response extends Message Implements StatusCodeInterface, ResponseInterface
 {
     protected $status;
     protected $phrase;
@@ -109,7 +110,7 @@ class Response extends Message Implements ResponseInterface
             'version' => str_replace('HTTP/', '', $env['SERVER_PROTOCOL']),
             'headers' => [],
             'body'    => '',
-            'status'  => 200,
+            'status'  => self::STATUS_OK,
             'phrase'  => '',
         ];
         

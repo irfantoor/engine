@@ -7,8 +7,8 @@ use IrfanTOOR\Exception;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Factory;
 use IrfanTOOR\Engine\Http\Headers;
-use IrfanTOOR\Engine\Http\Uri;
 use IrfanTOOR\Engine\Http\UploadedFile;
+use IrfanTOOR\Engine\Http\Uri;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**

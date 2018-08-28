@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
 
-require dirname(__DIR__) . '/vendor/autoload.php';
+require 'autoload.php';
 
 use IrfanTOOR\Console\Command;
 use IrfanTOOR\Console\ShellCommand;

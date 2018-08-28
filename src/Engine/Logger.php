@@ -16,7 +16,7 @@ class Logger
         file_put_contents(
             $this->file,
             date('Y-m-d H:i:s') . " LEVEL-{$level} $message" . PHP_EOL,
-            FILE_APPEND | LOCK_EX
+            FILE_APPEND # | LOCK_EX
         );
     }
 }

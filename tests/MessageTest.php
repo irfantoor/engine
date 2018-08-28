@@ -17,7 +17,7 @@ class MessageTest extends TestCase
         $this->assertEquals('1.1', $m->getProtocolVersion());
         $this->assertEquals([], $m->getHeaders());
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Stream::class, $m->getBody());
-        $this->assertEquals('', $m->getBody());        
+        $this->assertEquals('', $m->getBody());   
     }
 
     function testGetHeaders()
