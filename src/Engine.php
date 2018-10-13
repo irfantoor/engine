@@ -10,6 +10,7 @@ use IrfanTOOR\Engine\Exception;
 class Engine
 {
     protected $config;
+    protected $classes;
     protected $container;
 
     /*
@@ -18,8 +19,72 @@ class Engine
      */
     function __construct($config=[])
     {
+        # preprocess config
+        # default env variables to be merged with Server Request Environment
+        if (isset($config['default']['Environment'])) {
+            $sre = isset($config['default']['ServerRequest']['env'])
+                        ? $config['default']['ServerRequest']['env']
+                        : [];
+            $sre = array_merge($config['default']['Environment'], $sre);
+            $config['default']['ServerRequest']['env'] = $sre;
+        }
+
         $this->config    = new Collection($config);
         $this->container = new Container();
+
+        # Default classes can be overriden by $config['default']['classes']
+        # e.g. $config['default']['classes']['Environmet'] = 'My\\Environment';
+        $defaults = [
+            # default factories
+            'Cookie'        => 'IrfanTOOR\\Engine\\Http\\Cookie',
+            'UploadedFile'  => 'IrfanTOOR\\Engine\\Http\\UploadedFile',
+
+            # default classes
+            'Environment'   => 'IrfanTOOR\\Engine\\Http\\Environment',
+            'Request'       => 'IrfanTOOR\\Engine\\Http\\Request',
+            'Response'      => 'IrfanTOOR\\Engine\\Http\\Response',
+            'ServerRequest' => 'IrfanTOOR\\Engine\\Http\\ServerRequest',
+            'Uri'           => 'IrfanTOOR\\Engine\\Http\\Uri',
+        ];
+
+        $this->classes = $this->config('default.classes', []);
+
+        foreach ($defaults as $k => $v) {
+            if (!isset($this->classes[$k])) {
+                $this->classes[$k] = $v;
+            }
+        }
+
+        # Factory functions for Cookie and Uploaded file
+        foreach (
+            [
+                'UploadedFile',
+                'Cookie'
+            ] as $name
+        ) {
+            $cname = $this->classname($name);
+            $this->container->factory($name, function($args = []) use($cname) {
+                return new $cname($args);
+            });
+        }
+
+        # Initialize other default class instances
+        foreach (
+            [
+                # 'UploadedFile',
+                'Environment',
+                'Request',
+                'Response',
+                'ServerRequest',
+                'Uri',
+            ] as $name
+        ) {
+            $cname = $this->classname($name);
+            $defaults = $this->config('default.' . $name, []);
+            $this->container->set($name, function() use($cname, $defaults) {
+                return new $cname($defaults);
+            });
+        }        
 
         # Set default timezone
         date_default_timezone_set($this->config("timezone", "Europe/Paris"));
@@ -56,10 +121,7 @@ class Engine
             }
         }
 
-        $class = '\\IrfanTOOR\\Engine\\Http\\' . $method;
-        $class = new $class();
-        $this->container->set($method, $class);
-        return $class;
+        throw new Exception("Unknown method: '$method'");
     }
 
     /**
@@ -74,6 +136,19 @@ class Engine
     {
         return $this->config->get($id, $default);
     }
+
+    /**
+     * Returns the default or configured classname with namespace
+     *
+     * @param string $id
+     *
+     * @return string
+     */
+    public function classname($id)
+    {
+        # todo -- returns null class instead of null
+        return isset($this->classes[$id]) ? $this->classes[$id] : null;
+    }    
     
     /**
      * Runs the engine, the processes the request
@@ -103,7 +178,8 @@ class Engine
      */
     function process($request, $response, $args)
     {
-        throw new Exception('function: "process", does not exist in the derived class');
+        # throw new Exception('function: "process", does not exist in the derived class');
+        return $response;
     }
     
     /**

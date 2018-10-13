@@ -4,7 +4,7 @@ require 'autoload.php';
 
 $ie = new IrfanTOOR\Engine([
 	'debug' => [
-		'level' => 1
+		'level' => 2
 	],
 	'environment' => [
 		'HELLO' => 'World!',
@@ -20,6 +20,7 @@ $ie = new IrfanTOOR\Engine([
 ob_start();
 IrfanTOOR\Debug::dump($ie);
 $contents = ob_get_clean();
+
 $response = $ie->Response();
 $response->write($contents);
 $response->write('Debug Level: ' . $ie->config('debug.level'));

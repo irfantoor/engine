@@ -20,6 +20,24 @@ class MessageTest extends TestCase
         $this->assertEquals('', $m->getBody());   
     }
 
+    function testPassedValues()
+    {
+        $init = [
+            'version' => '1.0',
+            'headers' => [
+                'something' => 'Some Header',
+            ],
+            'body'    => 'Voila Voila!',
+        ];
+
+        $m = new Message($init);
+
+        $this->assertEquals('1.0', $m->getProtocolVersion());
+        $this->assertEquals(['something' => ['Some Header']], $m->getHeaders());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Stream::class, $m->getBody());
+        $this->assertEquals('Voila Voila!', $m->getBody());
+    }
+
     function testGetHeaders()
     {
         $h = [

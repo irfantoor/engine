@@ -23,17 +23,15 @@ class Message implements MessageInterface
         ];
         
         foreach ($defaults as $k=>$v) {
-            if (isset($init[$k])) {
-                $defaults[$k] = $init[$k];
+            if (!isset($init[$k])) {
+                $init[$k] = $v;
             }
         }
         
-        $this->version = $defaults['version'];
-        $this->headers = new Headers($defaults['headers']);
-        $this->body    = Stream::factory($defaults['body']); 
+        $this->version = $init['version'];
+        $this->headers = new Headers($init['headers']);
+        $this->body    = Stream::factory($init['body']); 
     }
-    
-    public function __set($id, $value) {}
     
     public function __clone()
     {
