@@ -2,7 +2,7 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use IrfanTOOR\Exception;
+use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Collection;
 
 class Environment extends Collection
