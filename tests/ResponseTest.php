@@ -5,9 +5,9 @@ use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Response;
 
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class ResponseTest extends TestCase
+class ResponseTest extends Test
 {
     function getResponse(
         $status  = 200,
@@ -25,7 +25,7 @@ class ResponseTest extends TestCase
     {
         $response = $this->getResponse();
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $response);
-        $this->assertInstanceOf(Psr\Http\Message\ResponseInterface::class, $response);
+        $this->assertImplements(Psr\Http\Message\ResponseInterface::class, $response);
     }
 
     function testDefaultResponseStatus()

@@ -2,9 +2,9 @@
 
 use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Environment;
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class EnvironmentTest extends TestCase
+class EnvironmentTest extends Test
 {
     function testCollectionInstance()
     {
@@ -24,15 +24,16 @@ class EnvironmentTest extends TestCase
 
     function testMockingEnv()
     {
-        $mock = null;
-        $e = null;
-        try {
-            $env = new Environment($mock);
-        } catch(Exception $e) {
-        }
-
-        $this->assertInstanceOf(IrfanTOOR\Engine\Exception::class, $e);
-        $this->assertEquals('to be mocked $data must be an array', $e->getMessage());
+        $this->assertException(
+            function(){
+                $mock = null;
+                $env = new Environment($mock);
+            }, 
+            IrfanTOOR\Engine\Exception::class, 
+            'to be mocked $data must be an array'
+        );
+        
+        # $this->assertEquals('to be mocked $data must be an array', $e->getMessage());
 
         $mock = [
             'REQUEST_TIME' => 0,

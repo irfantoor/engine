@@ -12,32 +12,27 @@
     ],
     "require": {
         "php": ">=7.0",
-        "irfantoor/debug": "^0.2.1",
-        "irfantoor/container": "^0.9.1",
+        "irfantoor/debug": "^0.3",
+        "irfantoor/collection": "^1.2",
+        "irfantoor/container": "^1.0",
+        "irfantoor/command": "^0.1.3",
         "psr/http-message": "^1.0",
         "fig/http-message-util": "^1.1"
     },
     "require-dev": {
-        "phpunit/phpunit": "^7.4"
+        "irfantoor/test": "dev-master"
     },
     "provide": {
         "psr/http-message": "1.0.1",
         "fig/http-message-util": "1.1.2"
     },
-     "bin": [
-        "ie"
-    ],
     "autoload": {
         "classmap": [
             "src/"
         ],
         "psr-4": {
+            "IrfanTOOR\\": "src",
             "IrfanTOOR\\Engine\\": "src"
         }
-    },
-    "scripts": {
-        "post-root-package-install": [
-            "@php -r \"symlink('vendor/bin/ie', 'ie');\""
-        ]
     }
 }

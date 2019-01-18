@@ -3,9 +3,9 @@
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\Uri;
 
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class RequestTest extends TestCase
+class RequestTest extends Test
 {
     function getRequest($env=[])
     {

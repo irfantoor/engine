@@ -2,8 +2,8 @@
 
 namespace IrfanTOOR\Engine\Http;
 
+use Exception;
 use Fig\Http\Message\RequestMethodInterface;
-use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Uri;
 use Psr\Http\Message\MessageInterface;
@@ -204,8 +204,8 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
     {
         $uri = (string) $this->get('uri');
         if (!$uri)
-            throw new \Exception('URI not defined');
+            throw new Exception('Request: URI not defined');
             
-        print_r($this);
+        print_r("todo -- to be coded");
     }
 }

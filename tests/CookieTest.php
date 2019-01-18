@@ -1,10 +1,9 @@
 <?php
 
-use PHPUnit\Framework\TestCase;
-
 use IrfanTOOR\Engine\Http\Cookie;
+use IrfanTOOR\Test;
 
-class CookieTest extends TestCase 
+class CookieTest extends Test
 {
 	public function setup(): void
 	{

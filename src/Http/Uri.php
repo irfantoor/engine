@@ -88,7 +88,7 @@ class Uri implements UriInterface
         
         $parsed = parse_url($uri);
         if (!$parsed) {
-            throw new \InvalidArgumentException('Invalid uri');
+            throw new InvalidArgumentException('Invalid uri');
         }
 
         extract($parsed);

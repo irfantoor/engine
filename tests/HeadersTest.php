@@ -1,9 +1,9 @@
 <?php
 
 use IrfanTOOR\Engine\Http\Headers;
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class HeadersTest extends TestCase
+class HeadersTest extends Test
 {
     function getHeaders()
     {

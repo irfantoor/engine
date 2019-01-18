@@ -2,7 +2,8 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use IrfanTOOR\Engine\Exception;
+use Exception;
+use InvalidArgumentException;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -52,7 +53,7 @@ class Stream implements StreamInterface
                 $this->write($v);
             }
         } else {
-            throw new \InvalidArgumentException('Invalid argument mixed');
+            throw new InvalidArgumentException('Invalid argument mixed');
         }
 
         if (isset($options['metadata'])) {

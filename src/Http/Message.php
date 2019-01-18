@@ -2,7 +2,7 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use IrfanTOOR\Engine\Exception;
+use Exception;
 use IrfanTOOR\Engine\Http\Stream;
 use Psr\Http\Message\MessageInterface;
 use Psr\Http\Message\StreamInterface;

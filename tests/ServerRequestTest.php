@@ -4,9 +4,9 @@ use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Request;
 use IrfanTOOR\Engine\Http\ServerRequest;
 
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class ServerRequestTest extends TestCase
+class ServerRequestTest extends Test
 {
     function getServerRequest($env=[])
     {
@@ -16,14 +16,8 @@ class ServerRequestTest extends TestCase
     function testServerRequestInstance()
     {
         $request = $this->getServerRequest();
-        $this->assertInstanceOf(
-            IrfanTOOR\Engine\Http\ServerRequest::class,
-            $request
-        );
-        $this->assertInstanceOf(
-            Psr\Http\Message\ServerRequestInterface::class, 
-            $request
-        );        
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\ServerRequest::class, $request);
+        $this->assertImplements(Psr\Http\Message\ServerRequestInterface::class, $request);
     }
     
     function testServerEnvironment()

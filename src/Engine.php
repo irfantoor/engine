@@ -2,10 +2,10 @@
 
 namespace IrfanTOOR;
 
+use Exception;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
 use IrfanTOOR\Debug;
-use IrfanTOOR\Engine\Exception;
 
 class Engine
 {
@@ -93,9 +93,6 @@ class Engine
         $dl = $this->config('debug.level', 0);
         if ($dl) {
             Debug::enable($dl);
-            if ($this->config('exception.log.enabled')) {
-                Exception::log($this->config('exception.log.file'));
-            }
         } else {
             error_reporting(0);
         }

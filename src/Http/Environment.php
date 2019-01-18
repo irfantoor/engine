@@ -2,8 +2,8 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use IrfanTOOR\Engine\Exception;
 use IrfanTOOR\Collection;
+use Exception;
 
 class Environment extends Collection
 {
@@ -15,8 +15,8 @@ class Environment extends Collection
             throw new Exception('to be mocked $data must be an array');
 
         # from slim framework
-        if ((isset($mock['HTTPS']) && $mock['HTTPS'] !== 'off') ||
-            ((isset($mock['REQUEST_SCHEME']) && $mock['REQUEST_SCHEME'] === 'https'))) {
+        if ((isset($data['HTTPS']) && $data['HTTPS'] !== 'off') ||
+            ((isset($data['REQUEST_SCHEME']) && $data['REQUEST_SCHEME'] === 'https'))) {
             $defscheme = 'https';
             $defport = 443;
         } else {

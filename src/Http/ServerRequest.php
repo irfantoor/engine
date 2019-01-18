@@ -2,8 +2,8 @@
 
 namespace IrfanTOOR\Engine\Http;
 
+use Exception;
 use IrfanTOOR\Collection;
-use IrfanTOOR\Exception;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Factory;
 use IrfanTOOR\Engine\Http\Headers;

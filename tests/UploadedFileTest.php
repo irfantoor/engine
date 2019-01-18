@@ -6,9 +6,9 @@ use IrfanTOOR\Engine\Http\UploadedFile;
 use Psr\Http\Message\UriInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class UploadedFileTest extends TestCase
+class UploadedFileTest extends Test
 {
 
     function createTemporaryFile($contents = null)
@@ -20,18 +20,20 @@ class UploadedFileTest extends TestCase
         return $file;
     }
     
-    function assertUploadedFile(
-        $file,
-        $contents,
-        $size = null,
-        $error = null,
-        $clientFilename = null,
-        $clientMediaType = null
-    ) {
-        $this->assertInstanceOf(UploadedFileInterface::class, $file);
+    function assertUploadedFile($file)
+    {
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $file);
+        $this->assertImplements(UploadedFileInterface::class, $file);
+    }
+
+    function assertUploadedContents($file, $contents)
+    {
         $this->assertSame($contents, (string) $file->getStream());
-        $this->assertSame($size ?: strlen($contents), $file->getSize());
+        $this->assertSame(strlen($contents), $file->getSize());
         $this->assertSame($error ?: UPLOAD_ERR_OK, $file->getError());
+    }
+
+    function assertUploadedClientFilenameAndType($file, $clientFilename = null, $clientMediaType = null) {
         $this->assertSame($clientFilename, $file->getClientFilename());
         $this->assertSame($clientMediaType, $file->getClientMediaType());
     }
@@ -63,7 +65,8 @@ class UploadedFileTest extends TestCase
         $error = UPLOAD_ERR_NO_FILE;
         $file = new UploadedFile(null);
 
-        $this->assertInstanceOf(UploadedFileInterface::class, $file);
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $file);
+        $this->assertImplements(UploadedFileInterface::class, $file);
         $this->assertEquals($error, $file->getError());
     }
 }

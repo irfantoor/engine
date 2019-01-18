@@ -5,9 +5,9 @@ use IrfanTOOR\Engine\Http\Factory;
 use Psr\Http\Message\UriInterface;
 
 
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class UriTest extends TestCase
+class UriTest extends Test
 {
     function testUriInstance()
     {
@@ -171,12 +171,11 @@ class UriTest extends TestCase
         $this->assertNull($uri->getPort());
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testExceptionWhenUriIsInvalid()
     {
-        new Uri(':');
+        $this->assertException(function(){
+            new Uri(':');    
+        }, 'InvalidArgumentException');
     }
 
 }

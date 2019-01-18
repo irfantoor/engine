@@ -7,19 +7,7 @@ focussing on the requests and the responses. A Swiss-knife for world-wide-web.
 The objective of this library is to be a Bare-minimum, Embeddable and Educative.
 
 Irfan's Engine now implements the PSR-7 classes and conforms to the validation
-constraints imposed. You can break out of these constraints by using:
-
-```php
-// You can enable the hacker mode by defining this constant
-define('HACKER_MODE', true);
-```
-
-If this constant is defined as a non false value, you can avoid all of the
-validations, though certain constraints can not be eliminated, which are
-essential for the proper functioning of the underlying system.
-
-Now equiped with a console command ie, so that you can easily initialise
-a basic application.
+constraints imposed.
 
 Note: This documentation is just to get you started, you are encouraged to study
 the code and the examples in the examples folder, which might help you get going

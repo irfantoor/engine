@@ -2,6 +2,7 @@
 
 namespace IrfanTOOR\Engine\Http;
 
+use Exception;
 use InvalidArgumentException;
 use IrfanTOOR\Engine\Http\Stream;
 use Psr\Http\Message\UploadedFileInterface;
@@ -96,7 +97,7 @@ class UploadedFile implements UploadedFileInterface
                 $fp = fopen($file, 'r');
                 $this->stream = Stream::factory($fp, $options);
                 $this->size = $size ?: $this->stream->getSize();
-            } catch(\Exception $e) {
+            } catch(Exception $e) {
                 $this->error = UPLOAD_ERR_NO_FILE;
             }
         } else {
@@ -123,7 +124,7 @@ class UploadedFile implements UploadedFileInterface
     public function getStream()
     {
         if ($this->moved) {
-            throw new \RuntimeException(sprintf('Uploaded file %1s has already been moved', $this->name));
+            throw new RuntimeException(sprintf('Uploaded file %1s has already been moved', $this->name));
         }
 
         return $this->stream;

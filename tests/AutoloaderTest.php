@@ -1,9 +1,7 @@
 <?php
 
-namespace IrfanTOOR\Engine\Tests;
-
 use IrfanTOOR\Engine\Autoloader;
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
 class MockPsr4AutoloaderClass extends Autoloader
 {
@@ -20,11 +18,11 @@ class MockPsr4AutoloaderClass extends Autoloader
     }
 }
 
-class AutoloaderTest extends TestCase
+class AutoloaderTest extends Test
 {
     protected $loader;
 
-    protected function setUp()
+    public function setUp()
     {
         $this->loader = new MockPsr4AutoloaderClass;
 

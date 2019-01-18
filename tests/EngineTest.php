@@ -3,7 +3,7 @@
 use IrfanTOOR\Engine;
 use IrfanTOOR\Engine\Http\Response;
 
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
 class MockResponse extends Response
 {
@@ -35,11 +35,11 @@ class MockEngine extends Engine
     }
 }
 
-class EngineTest extends TestCase
+class EngineTest extends Test
 {
     protected $ie;
 
-    protected function setUp($config = [])
+    public function setup($config = [])
     {
         $this->ie = new MockEngine ($config);
     }
@@ -147,9 +147,9 @@ class EngineTest extends TestCase
 
         $result = $this->ie->getResult();
 
-        $this->assertInstanceOf(Psr\Http\Message\RequestInterface::class, $result[0]);
-        $this->assertInstanceOf(Psr\Http\Message\ResponseInterface::class, $result[1]);
-        $this->assertTrue(is_array($result[2]));
+        $this->assertImplements(Psr\Http\Message\RequestInterface::class, $result[0]);
+        $this->assertImplements(Psr\Http\Message\ResponseInterface::class, $result[1]);
+        $this->assertArray($result[2]);
     }
 
     public function testProcess()
@@ -162,7 +162,6 @@ class EngineTest extends TestCase
         $this->assertEquals('Hello World!', $res->getBody());
         $this->assertEquals('Engine: IE v9', $res->getHeaderLine('engine'));
     }
-
 
     public function testFinalize()
     {

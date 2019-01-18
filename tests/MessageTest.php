@@ -1,9 +1,9 @@
 <?php
 
 use IrfanTOOR\Engine\Http\Message;
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
-class MessageTest extends TestCase
+class MessageTest extends Test
 {
     function testMessageInstance()
     {

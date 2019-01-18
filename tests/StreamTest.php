@@ -1,20 +1,21 @@
 <?php
 
 use IrfanTOOR\Engine\Http\Stream;
-
-use PHPUnit\Framework\TestCase;
+use IrfanTOOR\Test;
 
 /**
  * @covers GuzzleHttp\Stream\Stream
  */
-class StreamTest extends TestCase
+class StreamTest extends Test
 {
     /**
      * @expectedException \InvalidArgumentException
      */
     public function testConstructorThrowsExceptionOnInvalidArgument()
     {
-        new Stream(true);
+        $this->assertException(function(){
+            new Stream(true);
+        });
     }
 
     public function testConstructorInitializesProperties()
@@ -209,12 +210,11 @@ class StreamTest extends TestCase
         $this->assertSame($s, Stream::factory($s));
     }
 
-    /**
-     * @expectedException \InvalidArgumentException
-     */
     public function testThrowsExceptionForUnknown()
     {
-        Stream::factory(new \stdClass());
+        $this->assertException(function(){
+            Stream::factory(new \stdClass());
+        }, InvalidArgumentException::class);
     }
 
     public function testReturnsCustomMetadata()
