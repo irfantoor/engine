@@ -15,7 +15,7 @@
         "irfantoor/debug": "^0.3",
         "irfantoor/collection": "^1.2",
         "irfantoor/container": "^1.0",
-        "irfantoor/command": "^0.1.3",
+        "irfantoor/command": "^0.2",
         "psr/http-message": "^1.0",
         "fig/http-message-util": "^1.1"
     },

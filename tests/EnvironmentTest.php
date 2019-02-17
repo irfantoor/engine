@@ -1,6 +1,6 @@
 <?php
 
-use IrfanTOOR\Engine\Exception;
+use Exception;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Test;
 
@@ -29,7 +29,7 @@ class EnvironmentTest extends Test
                 $mock = null;
                 $env = new Environment($mock);
             }, 
-            IrfanTOOR\Engine\Exception::class, 
+            Exception::class, 
             'to be mocked $data must be an array'
         );
         

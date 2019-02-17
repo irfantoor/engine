@@ -6,6 +6,7 @@ use Exception;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Container;
 use IrfanTOOR\Debug;
+use IrfanTOOR\Engine\Constants;
 
 class Engine
 {
@@ -119,6 +120,11 @@ class Engine
         }
 
         throw new Exception("Unknown method: '$method'");
+    }
+
+    public function getVersion()
+    {
+        return Constants::VERSION;
     }
 
     /**

@@ -2,6 +2,7 @@
 
 use IrfanTOOR\Engine;
 use IrfanTOOR\Engine\Http\Response;
+use IrfanTOOR\Engine\Constants;
 
 use IrfanTOOR\Test;
 
@@ -135,6 +136,13 @@ class EngineTest extends Test
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $f1);
         $this->assertEquals($f1, $f2);
         $this->assertNotSame($f1, $f2);
+    }
+
+    public function testGetVersion()
+    {
+        $ie = new MockEngine();
+        $version = Constants::VERSION;
+        $this->assertEquals($version, $ie->getVersion());
     }
 
     public function testRun()
