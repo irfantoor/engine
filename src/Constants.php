@@ -25,5 +25,5 @@ class Constants
 {
     public const NAME        = 'Irfan\'s Engine';
     public const DESCRIPTION = 'A bare-minimum PHP framework';
-    public const VERSION     = '1.1';
+    public const VERSION     = '2.0';
 }

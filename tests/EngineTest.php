@@ -17,9 +17,7 @@ class MockEngine extends Engine
     function process($request, $response, $args)
     {   
         $response->write('Hello World!');
-        $response = $response->withHeader('Engine', 'IE v9');
-
-        return $response;
+        return $response->withHeader('Engine', 'MyEngine 0.1 (test)');
     }
 
     function finalize($request, $response, $args)
@@ -42,12 +40,23 @@ class EngineTest extends Test
 
     public function setup($config = [])
     {
-        $this->ie = new MockEngine ($config);
+        $this->ie = new MockEngine($config);
     }
 
     public function testInstance()
     {
         $this->assertInstanceOf(IrfanTOOR\Engine::class, $this->ie);
+    }
+
+    public function test__Call()
+    {
+        $ie = $this->ie;
+
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Request::class, $ie->getRequest());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $ie->getResponse());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\ServerRequest::class, $ie->getServerRequest());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Cookie::class, $ie->getCookie());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $ie->getUploadedFile());
     }
 
     public function testConfig()
@@ -81,10 +90,10 @@ class EngineTest extends Test
 
         // $result = $ie->getResult(IrfanTOOR\Engine\Http\Response);
 
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $ie->Response());
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Request::class, $ie->Request());
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Cookie::class, $ie->Cookie());
-        $this->assertNotInstanceOf(MockResponse::class, $ie->Response());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $ie->getResponse());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Request::class, $ie->getRequest());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Cookie::class, $ie->getCookie());
+        $this->assertNotInstanceOf(MockResponse::class, $ie->getResponse());
     }
 
     public function testLoadProvidedDefaultClasses()
@@ -113,25 +122,25 @@ class EngineTest extends Test
 
         $ie = new MockEngine($config);
         $ie->run();
-        $this->assertInstanceOf(MockResponse::class, $ie->Response());
+        $this->assertInstanceOf(MockResponse::class, $ie->getResponse());
         
         # Environment contains the configured env variables
-        $req = $ie->ServerRequest();
+        $req = $ie->getServerRequest();
         $this->assertEquals('world', $req->getAttribute('env.hello'));
         $this->assertEquals('World!', $req->getAttribute('env.Hello'));
         $this->assertEquals('Not', $req->getAttribute('env.Missing'));
 
         # Cookie returns a new instance
-        $c1 = $ie->Cookie(['name' => 'hello', 'value' => 'world']);
-        $c2 = $ie->Cookie(['name' => 'hello', 'value' => 'world']);
+        $c1 = $ie->getCookie(['name' => 'hello', 'value' => 'world']);
+        $c2 = $ie->getCookie(['name' => 'hello', 'value' => 'world']);
 
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Cookie::class, $c1);
         $this->assertEquals($c1, $c2);
         $this->assertNotSame($c1, $c2);
 
         # Uploaded file returns a new instance
-        $f1 = $ie->UploadedFile('hello.txt', 'world.txt', 'text/plain');
-        $f2 = $ie->UploadedFile('hello.txt', 'world.txt', 'text/plain');
+        $f1 = $ie->getUploadedFile('hello.txt', 'world.txt', 'text/plain');
+        $f2 = $ie->getUploadedFile('hello.txt', 'world.txt', 'text/plain');
 
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $f1);
         $this->assertEquals($f1, $f2);
@@ -168,7 +177,7 @@ class EngineTest extends Test
 
         # assert the actions in the process phase
         $this->assertEquals('Hello World!', $res->getBody());
-        $this->assertEquals('Engine: IE v9', $res->getHeaderLine('engine'));
+        $this->assertEquals('Engine: MyEngine 0.1 (test)', $res->getHeaderLine('engine'));
     }
 
     public function testFinalize()

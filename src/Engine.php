@@ -85,7 +85,7 @@ class Engine
             $this->container->set($name, function() use($cname, $defaults) {
                 return new $cname($defaults);
             });
-        }        
+        }
 
         # Set default timezone
         date_default_timezone_set($this->config("timezone", "Europe/Paris"));
@@ -110,18 +110,26 @@ class Engine
      */
     public function __call($method, $args)
     {
-        if ($this->container->has($method)) {
-            $obj = $this->container[$method];
-            if (is_callable($obj)) {
-                return call_user_func_array($obj, $args);
-            } else {
-                return $obj;
+        if (strpos($method, 'get') === 0) {
+            $m = substr($method, 3);
+            if ($this->container->has($m)) {
+                $obj = $this->container[$m];
+                if (is_callable($obj)) {
+                    return call_user_func_array($obj, $args);
+                } else {
+                    return $obj;
+                }
             }
         }
 
         throw new Exception("Unknown method: '$method'");
     }
 
+    /**
+     * Returns the Version
+     *
+     * @return string version
+     */
     public function getVersion()
     {
         return Constants::VERSION;
@@ -151,7 +159,7 @@ class Engine
     {
         # todo -- returns null class instead of null
         return isset($this->classes[$id]) ? $this->classes[$id] : null;
-    }    
+    }
     
     /**
      * Runs the engine, the processes the request
@@ -159,8 +167,8 @@ class Engine
      */
     function run()
     {
-        $request  = $this->ServerRequest();
-        $response = $this->Response();
+        $request  = $this->getServerRequest();
+        $response = $this->getResponse();
         $uri      = $request->getUri();
         $basepath = $uri->getBasePath();
         $args     = explode('/', htmlspecialchars($basepath));

@@ -1,5 +1,6 @@
 <?php
 
+use IrfanTOOR\Engine\Constants;
 use IrfanTOOR\Engine\Http\Exception;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Headers;
@@ -38,7 +39,7 @@ class ResponseTest extends Test
 
     function testHeaders()
     {
-        $response = $this->getResponse();
+        $response = $this->getResponse('200', ['Engine' => 'MyEngine 0.1(test)']);
         $headers = $response->getHeaders();
         $this->assertTrue(is_array($headers));
         
@@ -46,9 +47,11 @@ class ResponseTest extends Test
             $this->assertTrue(is_array($v));
         }
 
+        $this->assertEquals(['Engine' => [Constants::NAME . ' ' . Constants::VERSION]], $response->getHeaders());
+
         $response = $response->withHeader('alfa', 'beta');
         $this->assertEquals(['beta'], $response->getHeader('ALFA'));
-        $this->assertEquals(['alfa' =>['beta']], $response->getHeaders());
+        $this->assertEquals(2, count($response->getHeaders()));
     }
 
     function testBody()
@@ -63,7 +66,7 @@ class ResponseTest extends Test
         
         $this->assertEquals('1.1', $response->getProtocolVersion());
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals([], $response->getHeaders());
+        $this->assertEquals(['Engine' => [Constants::NAME . ' ' . Constants::VERSION]], $response->getHeaders());
         $this->assertEquals('', $response->getBody());
     }
 
