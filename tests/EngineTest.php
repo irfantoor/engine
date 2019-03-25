@@ -40,12 +40,12 @@ class EngineTest extends Test
 
     public function setup($config = [])
     {
-        $this->ie = new MockEngine($config);
+        $this->ie = $this->getEngine($config);
     }
 
-    public function testInstance()
+    public function getEngine($config = [])
     {
-        $this->assertInstanceOf(IrfanTOOR\Engine::class, $this->ie);
+        return new MockEngine($config);
     }
 
     public function test__Call()
@@ -57,6 +57,7 @@ class EngineTest extends Test
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\ServerRequest::class, $ie->getServerRequest());
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\Cookie::class, $ie->getCookie());
         $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $ie->getUploadedFile());
+        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Environment::class, $ie->getEnvironment());
     }
 
     public function testConfig()
@@ -72,7 +73,7 @@ class EngineTest extends Test
             ],
         ];
 
-        $ie = new MockEngine($config);
+        $ie = $this->getEngine($config);
 
         $this->assertNotNull($ie->config('debug.level'));
         $this->assertEquals($config['debug']['level'], $ie->config('debug.level'));
@@ -85,7 +86,7 @@ class EngineTest extends Test
 
     public function testDefaultEngineHttpClasses()
     {
-        $ie = new MockEngine();
+        $ie = $this->getEngine($config);
         $ie->run();
 
         // $result = $ie->getResult(IrfanTOOR\Engine\Http\Response);
@@ -120,7 +121,7 @@ class EngineTest extends Test
             ],
         ];
 
-        $ie = new MockEngine($config);
+        $ie = $this->getEngine($config);
         $ie->run();
         $this->assertInstanceOf(MockResponse::class, $ie->getResponse());
         
@@ -149,7 +150,7 @@ class EngineTest extends Test
 
     public function testGetVersion()
     {
-        $ie = new MockEngine();
+        $ie = $this->$ie = $this->getEngine($config);
         $version = Constants::VERSION;
         $this->assertEquals($version, $ie->getVersion());
     }

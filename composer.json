@@ -12,15 +12,16 @@
     ],
     "require": {
         "php": ">=7.0",
-        "irfantoor/debug": "^0.3",
-        "irfantoor/collection": "^1.2",
+        "irfantoor/console": "^0.5.2",
+        "irfantoor/debug": "^0.3.5",
+        "irfantoor/command": "^0.2.3",
+        "irfantoor/collection": "^1.3",
         "irfantoor/container": "^1.0",
-        "irfantoor/command": "^0.2",
         "psr/http-message": "^1.0",
         "fig/http-message-util": "^1.1"
     },
     "require-dev": {
-        "irfantoor/test": "dev-master"
+        "irfantoor/test": "^0.4.3"
     },
     "provide": {
         "psr/http-message": "1.0.1",

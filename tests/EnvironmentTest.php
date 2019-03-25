@@ -1,6 +1,5 @@
 <?php
 
-use Exception;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Test;
 

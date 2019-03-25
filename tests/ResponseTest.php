@@ -1,11 +1,9 @@
 <?php
 
 use IrfanTOOR\Engine\Constants;
-use IrfanTOOR\Engine\Http\Exception;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Response;
-
 use IrfanTOOR\Test;
 
 class ResponseTest extends Test
@@ -47,8 +45,12 @@ class ResponseTest extends Test
             $this->assertTrue(is_array($v));
         }
 
-        $this->assertEquals(['Engine' => [Constants::NAME . ' ' . Constants::VERSION]], $response->getHeaders());
+        $this->assertEquals(Constants::NAME . ' ' . Constants::VERSION, $response->getHeaders()['Engine'][0]);
+    }
 
+    function testHeadersCount()
+    {
+        $response = $this->getResponse();
         $response = $response->withHeader('alfa', 'beta');
         $this->assertEquals(['beta'], $response->getHeader('ALFA'));
         $this->assertEquals(2, count($response->getHeaders()));
@@ -66,18 +68,9 @@ class ResponseTest extends Test
         
         $this->assertEquals('1.1', $response->getProtocolVersion());
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals(['Engine' => [Constants::NAME . ' ' . Constants::VERSION]], $response->getHeaders());
+        $this->assertEquals(Constants::NAME . ' ' . Constants::VERSION, $response->getHeaders()['Engine'][0]);
         $this->assertEquals('', $response->getBody());
     }
-
-//     function testParameterInitialization()
-//     {
-//         $response = new Response([
-//             'status' => 'NOT_FOUND',
-//         ]);
-// 
-//         $this->assertEquals(404, $response->get('status'));
-//     }
 
     function testWrite()
     {
