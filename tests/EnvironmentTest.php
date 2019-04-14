@@ -29,7 +29,7 @@ class EnvironmentTest extends Test
                 $env = new Environment($mock);
             }, 
             Exception::class, 
-            'to be mocked $data must be an array'
+            'to be mocked $init must be an array'
         );
         
         # $this->assertEquals('to be mocked $data must be an array', $e->getMessage());
@@ -41,11 +41,25 @@ class EnvironmentTest extends Test
 
         $env = new Environment($mock);
 
-        $menv = array_merge($_SERVER, $mock);
+        $mocked_env = array_merge($_SERVER, $mock);
 
         # Mocked Environment variables are added/modified
-        foreach($menv as $k=>$v) {
+        foreach($mocked_env as $k => $v) {
             $this->assertEquals($v, $env->get($k));
         }
+    }
+
+    function testLockedEnvironment()
+    {
+        $mock = [
+            'REQUEST_TIME' => 0,
+            'Hello'        => 'World!',
+        ];
+
+        $env = new Environment($mock);
+        $env->set('Hello', 'Someone');
+        $this->assertEquals('World!', $env->get('Hello'));
+        $env->remove('Hello');
+        $this->assertEquals('World!', $env->get('Hello'));
     }
 }

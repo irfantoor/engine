@@ -7,16 +7,16 @@ use Exception;
 
 class Environment extends Collection
 {
-    function __construct($data = [])
+    function __construct($init = [])
     {
         # todo -- verify $_ENV, getenv()
         
-        if (!is_array($data))
-            throw new Exception('to be mocked $data must be an array');
+        if (!is_array($init))
+            throw new Exception('to be mocked $init must be an array');
 
         # from slim framework
-        if ((isset($data['HTTPS']) && $data['HTTPS'] !== 'off') ||
-            ((isset($data['REQUEST_SCHEME']) && $data['REQUEST_SCHEME'] === 'https'))) {
+        if ((isset($init['HTTPS']) && $init['HTTPS'] !== 'off') ||
+            ((isset($init['REQUEST_SCHEME']) && $init['REQUEST_SCHEME'] === 'https'))) {
             $defscheme = 'https';
             $defport = 443;
         } else {
@@ -24,7 +24,7 @@ class Environment extends Collection
             $defport = 80;
         }
 
-        $data = array_merge(
+        $env = array_merge(
             [
                 'SERVER_PROTOCOL'      => 'HTTP/1.1',
                 'REQUEST_METHOD'       => 'GET',
@@ -44,9 +44,10 @@ class Environment extends Collection
                 'REQUEST_TIME_FLOAT'   => microtime(true),
             ],
             $_SERVER,
-            $data
+            $init
         );
 
-        parent::__construct($data);
+        parent::__construct($env);
+        $this->lock();
     }
 }
