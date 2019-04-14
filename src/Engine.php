@@ -10,6 +10,10 @@ use IrfanTOOR\Engine\Constants;
 
 class Engine
 {
+    const NAME        = "Irfan's Engine";
+    const DESCRIPTION = "A bare-minimum PHP framework";
+    const VERSION     = "2.0.2";
+
     protected $config;
     protected $classes;
     protected $container;
@@ -132,7 +136,7 @@ class Engine
      */
     public function getVersion()
     {
-        return Constants::VERSION;
+        return self::VERSION;
     }
 
     /**
