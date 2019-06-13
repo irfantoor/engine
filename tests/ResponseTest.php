@@ -1,6 +1,6 @@
 <?php
 
-use IrfanTOOR\Engine\Constants;
+use IrfanTOOR\Engine;
 use IrfanTOOR\Engine\Http\Environment;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\Response;
@@ -45,7 +45,7 @@ class ResponseTest extends Test
             $this->assertTrue(is_array($v));
         }
 
-        $this->assertEquals(Constants::NAME . ' ' . Constants::VERSION, $response->getHeaders()['Engine'][0]);
+        $this->assertEquals(Engine::NAME . ' ' . Engine::VERSION, $response->getHeader('Engine')[0]);
     }
 
     function testHeadersCount()
@@ -68,7 +68,7 @@ class ResponseTest extends Test
         
         $this->assertEquals('1.1', $response->getProtocolVersion());
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertEquals(Constants::NAME . ' ' . Constants::VERSION, $response->getHeaders()['Engine'][0]);
+        $this->assertEquals(Engine::NAME . ' ' . Engine::VERSION, $response->getHeaders()['Engine'][0]);
         $this->assertEquals('', $response->getBody());
     }
 

@@ -12,7 +12,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "2.0.3";
+    const VERSION     = "2.0.4";
 
     protected $config;
     protected $classes;

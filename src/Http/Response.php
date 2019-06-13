@@ -4,7 +4,7 @@ namespace IrfanTOOR\Engine\Http;
 
 use Exception;
 use Fig\Http\Message\StatusCodeInterface;
-use IrfanTOOR\Engine\Constants;
+use IrfanTOOR\Engine;
 use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Stream;
 use Psr\Http\Message\ResponseInterface;
@@ -123,7 +123,7 @@ class Response extends Message Implements StatusCodeInterface, ResponseInterface
             }
         }
 
-        $init['headers']['Engine'] = [Constants::NAME . ' ' . Constants::VERSION];
+        $init['headers']['Engine'] = [Engine::NAME . ' ' . Engine::VERSION];
         
         parent::__construct($init);
         $this->status = $defaults['status'];

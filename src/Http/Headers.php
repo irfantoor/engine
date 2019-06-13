@@ -60,17 +60,19 @@ class Headers extends Collection
 
     public function __construct($init = [])
 	{
-        parent::__construct($init);
+        foreach ($init as $k => $v) {
+            $this->set($k, $v);
+        }
 	}
 
     # used by set($id, $value)
-    public function setItem($id, $value = null)
+    public function set($id, $value = null)
     {    
         if (!is_array($value)) {
             $value = [$value];
         }
         
-        parent::setItem(strtolower($id), ['id' => $id, 'value' => $value]);
+        parent::set(strtolower($id), ['id' => $id, 'value' => $value]);
     }
 
     public function add($id, $value)

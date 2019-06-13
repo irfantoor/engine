@@ -86,7 +86,7 @@ class EngineTest extends Test
 
     public function testDefaultEngineHttpClasses()
     {
-        $ie = $this->getEngine($config);
+        $ie = $this->getEngine();
         $ie->run();
 
         // $result = $ie->getResult(IrfanTOOR\Engine\Http\Response);
@@ -150,8 +150,8 @@ class EngineTest extends Test
 
     public function testGetVersion()
     {
-        $ie = $this->$ie = $this->getEngine($config);
-        $version = Constants::VERSION;
+        $ie = $this->$ie = $this->getEngine();
+        $version = Engine::VERSION;
         $this->assertEquals($version, $ie->getVersion());
     }
 
