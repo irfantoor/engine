@@ -4,11 +4,13 @@ namespace IrfanTOOR\Engine\Http;
 
 use Exception;
 use Fig\Http\Message\RequestMethodInterface;
-use IrfanTOOR\Engine\Http\Message;
-use IrfanTOOR\Engine\Http\Uri;
-use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\UriInterface;
+use IrfanTOOR\Engine\Http\{
+    Message,
+    Uri
+};
+// use Psr\Http\Message\MessageInterface;
+// use Psr\Http\Message\RequestInterface;
+// use Psr\Http\Message\UriInterface;
 
 /**
  * Representation of an outgoing, client-side request.
@@ -29,36 +31,36 @@ use Psr\Http\Message\UriInterface;
  * be implemented such that they retain the internal state of the current
  * message and return an instance that contains the changed state.
  */
-class Request extends Message implements RequestInterface, RequestMethodInterface
+class Request extends Message implements RequestMethodInterface
 {
     protected $method;
     protected $uri;
-    
-    public function __construct($init = [])
+
+    function __construct($init = [])
     {
         parent::__construct($init);
-        
+
         $defaults = [
             'method' => self::METHOD_GET,
-            'uri'    => '',
+            'uri'    => 'http://localhost',
         ];
-    
+
         foreach ($defaults as $k=>$v) {
             if (isset($init[$k])) {
                 $defaults[$k] = $init[$k];
             }
         }
-        
+
         $this->method = $defaults['method'];
         $this->uri    = new Uri($defaults['uri']);
     }
-    
-    public function __clone()
+
+    function __clone()
     {
         parent::__clone();
         $this->uri = clone $this->uri;
     }
-    
+
     /**
      * Retrieves the message's request target.
      *
@@ -75,7 +77,7 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
      *
      * @return string
      */
-    public function getRequestTarget()
+    function getRequestTarget()
     {
         return (string) $this->uri;
     }
@@ -97,11 +99,11 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
      * @param mixed $requestTarget
      * @return static
      */
-    public function withRequestTarget($requestTarget)
+    function withRequestTarget($requestTarget)
     {
         $clone = clone $this;
         $clone->uri = new Uri($requestTarget);
-        
+
         return $clone;
     }
 
@@ -110,7 +112,7 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
      *
      * @return string Returns the request method.
      */
-    public function getMethod()
+    function getMethod()
     {
         return $this->method;
     }
@@ -130,11 +132,11 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
      * @return static
      * @throws \InvalidArgumentException for invalid HTTP methods.
      */
-    public function withMethod($method)
+    function withMethod($method)
     {
         $clone = clone $this;
         $clone->method = $method;
-        
+
         return $clone;
     }
 
@@ -147,7 +149,7 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
      * @return UriInterface Returns a UriInterface instance
      *     representing the URI of the request.
      */
-    public function getUri()
+    function getUri()
     {
         return clone $this->uri;
     }
@@ -182,16 +184,15 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
      * @param bool $preserveHost Preserve the original state of the Host header.
      * @return static
      */
-    public function withUri(UriInterface $uri, $preserveHost = false)
+    function withUri(Uri $uri, $preserveHost = false)
     {
         # todo -- preserve host logic
         $clone = clone $this;
         $clone->uri = $uri;
-        
-        return $clone;
-    }    
 
-    
+        return $clone;
+    }
+
     # todo -- send request
     # todo -- send - must return a response
     # todo -- sendAsync - must return a promise
@@ -200,12 +201,12 @@ class Request extends Message implements RequestInterface, RequestMethodInterfac
      * 
      * returns IrfanTOOR\Engine\Http\Response
      */
-    public function send()
+    function send()
     {
         $uri = (string) $this->get('uri');
         if (!$uri)
             throw new Exception('Request: URI not defined');
-            
+
         print_r("todo -- to be coded");
     }
 }

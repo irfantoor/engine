@@ -8,22 +8,24 @@ use IrfanTOOR\Debug;
 Debug::enable(3);
 
 $cookies = [
+    # adds/modifies the value of a cookie key
     new Cookie(
         [
             'name' => 'Hello',
             'value' => 'World!',
             'domain' => 'localhost',
-            'secure' => true,
+            'secure' => false,
             'httponly' => true,
         ]
     ),
 
+    # deletes a cookie key
     new Cookie(
         [
             'name' => 'locked',
             'value' => null,
             'domain' => 'localhost',
-            'secure' => true,
+            'secure' => false,
             'httponly' => true,
         ]
     ),    

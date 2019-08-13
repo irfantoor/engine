@@ -2,10 +2,7 @@
 
 namespace IrfanTOOR\Engine\Http;
 
-use IrfanTOOR\Collection;
-use IrfanTOOR\Engine\Http\Environment;
-
-class Headers extends Collection
+class Headers
 {
     /**
      * Special HTTP headers that do not have the "HTTP_" prefix
@@ -21,6 +18,8 @@ class Headers extends Collection
         'AUTH_TYPE' => 1,
     ];
 
+    protected $data = [];
+
     /**
      * Create Headers from Enviroment class or an array of $_SERVER
      *
@@ -28,7 +27,7 @@ class Headers extends Collection
      *
      * @return Headers Collection
      */
-    public static function createFromEnvironment($env = [])
+    static function createFromEnvironment($env = [])
     {
         if (!($env instanceof Environment)) {
             $env = new Environment($env);
@@ -36,7 +35,8 @@ class Headers extends Collection
 
         // Headers from environment
         $data = [];
-        foreach($env as $k=>$v) {
+
+        foreach($env as $k => $v) {
             $k = strtoupper($k);
             if (strpos($k, 'HTTP_') === 0) {
                 $k = substr($k, 5);
@@ -58,74 +58,91 @@ class Headers extends Collection
         return new static($data);
     }
 
-    public function __construct($init = [])
+    function __construct($init = [])
 	{
-        foreach ($init as $k => $v) {
-            $this->set($k, $v);
-        }
+        $this->setMultiple($init);
 	}
 
-    # used by set($id, $value)
-    public function set($id, $value = null)
-    {    
-        if (!is_array($value)) {
-            $value = [$value];
+    function has($k) {
+        $l = strtolower($k);
+        return array_key_exists($l, $this->data);
+    }
+
+    function get($k, $default = null)
+    {
+        $l = strtolower($k);
+
+        return 
+            array_key_exists($l, $this->data) 
+                ? $this->data[$l][1]
+                : $default;
+    }
+
+    function set($k, $v)
+    {
+        if (!is_array($v)) {
+            $v = [$v];
         }
-        
-        parent::set(strtolower($id), ['id' => $id, 'value' => $value]);
+
+        $l = strtolower($k);
+        $this->data[$l] = [$k, $v];
     }
 
-    public function add($id, $value)
+    function setMultiple($h)
     {
-        if ($this->has($id)) {
-            $old = $this->get($id);
-            $new = is_array($value) ? $value : [$value];
-            $this->set($id, array_merge($old, array_values($new)));        
-        } else {
-            $this->set($id, $value);
-        }        
+        foreach ($h as $k => $v) {
+            $this->set($k, $v);
+        }
     }
 
-    public function has($id)
+    function add($k, $v)
     {
-        return parent::has(strtolower($id));
+        $o = $this->get($k);
+
+        if ($o) {
+            $v = array_merge($o, [$v]);
+        }
+
+        $this->set($k, $v);
     }
 
-    public function get($id, $default = [])
+    function remove($k)
     {
-        return $this->has($id) ? parent::get(strtolower($id))['value'] : $default;
+        unset($this->data[strtolower($k)]);
     }
 
-    public function getName($id)
+    function getName($k)
     {
-        return $this->has($id) ? parent::get(strtolower($id))['id'] : $id;
+        $l = strtolower($k);
+
+        return 
+            array_key_exists($l, $this->data) 
+                ? $this->data[$l][0]
+                : $k;
     }
 
-    public function getLine($id, $default = '')
+    function getLine($k, $default = '')
     {
-        $values = $this->get($id, []);
+        $values = $this->get($k, []);
         $line = implode(', ', $values);
         $line = ('' !== $line) ? $line : $default;
-        
-        if ($this->has($id)) {    
-            return $this->getName($id) . ': ' . $line;
+
+        if ($this->has($k)) {
+            return $this->getName($k) . ': ' . $line;
         } else {
-            return $id . ': ' . $line;
+            return $k . ': ' . $line;
         }
     }
 
-    public function remove($id)
+    function toArray()
     {
-        parent::remove(strtolower($id));
-    }
+        $h = [];
 
-    public function toArray()
-    {
-        $headers = [];
-        foreach(parent::toArray() as $v) {
-            $headers[$v['id']] = $v['value'];
+        foreach ($this->data as $k => $v) {
+            $h[$v[0]] = $v[1];
         }
-        return $headers;
+
+        return $h;
     }
 
     function keys() {
@@ -134,17 +151,26 @@ class Headers extends Collection
 
     function send()
     {
-        if (headers_sent())
-            return;
+        $headers = [];
 
-        foreach($this->toArray() as $k=>$v) {
+        foreach ($this->toArray() as $k => $v) {
             if (is_array($v)) {
                 foreach ($v as $value) {
-                    header(sprintf('%s: %s', $k, $value), false);
+                    $headers[] = sprintf('%s: %s', $k, $value);
                 }
             } else {
-                header(sprintf('%s: %s', $k, $v), false);
+                $headers[] = sprintf('%s: %s', $k, $v);
             }
         }
+
+        if (headers_sent())
+            return $headers; # test -vv
+
+        # send headers
+        foreach ($headers as $header) {
+            header($header, false);
+        }
+
+        return $headers; # test -v
     }
 }

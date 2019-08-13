@@ -11,10 +11,10 @@ $uri  = new Uri(
     'http://irfan:test@www.example.com:8000/hello/world?hello=world#top'
 );
 
-Debug::dump($uri);
-Debug::dump((string) $uri);
+d($uri);
+d((string) $uri);
 $uri = $uri->withPort(80);
-Debug::dump((string) $uri);
+d((string) $uri);
 
 define('HACKER_MODE', true);
 $uri = $uri
@@ -27,4 +27,4 @@ $uri = $uri
         ->withFragment('no-panic')
         ;
 
-Debug::dump((string) $uri);
+d((string) $uri);

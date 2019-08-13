@@ -5,7 +5,7 @@ namespace IrfanTOOR\Engine\Http;
 use Exception;
 use InvalidArgumentException;
 use IrfanTOOR\Engine\Http\Stream;
-use Psr\Http\Message\UploadedFileInterface;
+// use Psr\Http\Message\UploadedFileInterface;
 use RuntimeException;
 
 /**
@@ -16,7 +16,7 @@ use RuntimeException;
  * state of the current instance and return an instance that contains the
  * changed state.
  */
-class UploadedFile implements UploadedFileInterface
+class UploadedFile # implements UploadedFileInterface
 {
     protected $file;
     protected $name;

@@ -46,13 +46,11 @@ $ie = new Engine([
     'debug' => [
         'level' => 2,
     ],
-    
-    ''
 ]);
 
 
-$request = $ie->ServerRequest();
-$response = $ie->Response();
+$request = $ie->getServerRequest();
+$response = $ie->getResponse();
 $method = $request->getMethod();
 
 switch($method) {

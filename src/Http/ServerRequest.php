@@ -5,11 +5,11 @@ namespace IrfanTOOR\Engine\Http;
 use Exception;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Factory;
+// use IrfanTOOR\Engine\Http\Factory;
 use IrfanTOOR\Engine\Http\Headers;
 use IrfanTOOR\Engine\Http\UploadedFile;
 use IrfanTOOR\Engine\Http\Uri;
-use Psr\Http\Message\ServerRequestInterface;
+// use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Representation of an incoming, server-side HTTP request.
@@ -49,15 +49,15 @@ use Psr\Http\Message\ServerRequestInterface;
  * be implemented such that they retain the internal state of the current
  * message and return an instance that contains the changed state.
  */
-class ServerRequest extends Request implements ServerRequestInterface
-{    
+class ServerRequest extends Request # implements ServerRequestInterface
+{
     protected $attributes;
 
     function __construct($init = [])
     {
         $env = isset($init['env']) ? $init['env'] : [];
         $env = new Environment($env);
-        
+
         $defaults = [
             'version' => str_replace('HTTP/', '', $env['SERVER_PROTOCOL']),
             'method'  => $env['REQUEST_METHOD'],
@@ -75,9 +75,9 @@ class ServerRequest extends Request implements ServerRequestInterface
                 $init[$k] = $v;
             }
         }
-                
+
         parent::__construct($init);
-        
+
         $this->attributes = new Collection([
             'env'    => $defaults['env'],
             'get'    => $defaults['get'],
@@ -86,13 +86,13 @@ class ServerRequest extends Request implements ServerRequestInterface
             'files'  => $defaults['files'],
         ]);
     }
-    
+
     function __clone()
     {
         parent::__clone();
         $this->attributes['env'] = clone $this->attributes['env'];
-    }    
-    
+    }
+
     /**
      * Retrieve server parameters.
      *
@@ -142,9 +142,9 @@ class ServerRequest extends Request implements ServerRequestInterface
     public function withCookieParams(array $cookies)
     {
         $clone = clone $this;
-        $old = $clone->attributes['cookies'];
-        $clone->attributes['cookies'] = array_merge($old, $cookies);
-        
+        $old = $clone->attributes['cookie'] ?? [];
+        $clone->attributes['cookie'] = array_merge($old, $cookies);
+
         return $clone;
     }
 
@@ -192,7 +192,7 @@ class ServerRequest extends Request implements ServerRequestInterface
         $clone = clone $this;
         $old = $clone->attributes['query'];
         $clone->attributes['query'] = array_merge($old, $query);
-        
+
         return $clone;
     }
 
@@ -282,7 +282,7 @@ class ServerRequest extends Request implements ServerRequestInterface
         $clone = clone $this;
         $old = $clone->attributes['post'];
         $clone->attributes['post'] = array_merge($old, $data);
-        
+
         return $clone;
     }
 
@@ -322,7 +322,7 @@ class ServerRequest extends Request implements ServerRequestInterface
     {
         // if (isset($this->cookies[$name]))
 //             return $this->cookies[$name];
-//             
+//
 //         if (isset($this->post[$name]))
 //             return $this->post[$name];
 // 
@@ -331,7 +331,7 @@ class ServerRequest extends Request implements ServerRequestInterface
 // 
 //         if (isset($this->files[$name]))
 //             return $this->files[$name];
-//             
+//
 //         return $this->env->get($name, $default);
         return $this->attributes->get($name, $default);
     }
@@ -355,7 +355,7 @@ class ServerRequest extends Request implements ServerRequestInterface
     {
         $clone = clone $this;
         $this->attributes[$name] =  $value;
-        
+
         return $clone;
     }
 
@@ -377,10 +377,10 @@ class ServerRequest extends Request implements ServerRequestInterface
     {
         if (!$this->attributes->has($name))
             return $this;
-            
+
         $clone = clone $this;
         $clone->attributes->remove($name);
-                
+
         return $clone;
     }
 }

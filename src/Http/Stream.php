@@ -4,7 +4,7 @@ namespace IrfanTOOR\Engine\Http;
 
 use Exception;
 use InvalidArgumentException;
-use Psr\Http\Message\StreamInterface;
+// use Psr\Http\Message\StreamInterface;
 
 /**
  * Describes a data stream.
@@ -13,7 +13,7 @@ use Psr\Http\Message\StreamInterface;
  * a wrapper around the most common operations, including serialization of
  * the entire stream to a string.
  */
-class Stream implements StreamInterface
+class Stream # implements StreamInterface
 {
     protected $stream   = null;
     protected $metadata = [];
@@ -70,18 +70,18 @@ class Stream implements StreamInterface
     {
         $this->close();
     }
-    
+
     function __clone()
     {
         $pos = $this->tell();
         $this->rewind();
         $contents = $this->getContents();
         $this->seek($pos);
-        
+
         $this->stream   = fopen('php://temp', 'w+');
         $this->write($contents);
         $this->seek($pos);
-        
+
         # $this->metadata = clone $this->metadata;
     }
 

@@ -23,7 +23,7 @@ Debug::enable(1);
 //
 // $response->send();
 
-$name = (new ServerRequest)->getAttribute('name', 'World');
+$name = (new ServerRequest)->getAttribute('get.name', 'World');
 (new Response())
 	->write('Hello ' . ucfirst($name) . '!')
 	->send();

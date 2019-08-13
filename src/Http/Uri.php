@@ -5,7 +5,6 @@ namespace IrfanTOOR\Engine\Http;
 use InvalidArgumentException;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Engine\Http\Environment;
-use Psr\Http\Message\UriInterface;
 
 /**
  * Value object representing a URI.
@@ -27,115 +26,104 @@ use Psr\Http\Message\UriInterface;
  *
  * @link http://tools.ietf.org/html/rfc3986 (the URI specification)
  */
-class Uri implements UriInterface
+class Uri extends Collection
 {
-
     protected static $default_ports = [
-        # ''      => 80,
         'http'  => 80,
         'https' => 443,
     ];
-    
-    protected $scheme;
-    protected $user;
-    protected $pass;
-    protected $host;
-    protected $port;
-    protected $path;
-    protected $query;
-    protected $fragment;
-    
-    protected $user_info;
-    protected $authority;
-    protected $base_path;
-    
 
-//     protected static $regex = [
-//         'userinfo'  =>  '/(?:[^a-zA-Z0-9_\-\.~!\$&\'\(\)\*\+,;=]+|%(?![A-Fa-f0-9]{2}))/u',
-//         'path'      => '/(?:[^a-zA-Z0-9_\-\.~:@&=\+\$,\/;%]+|%(?![A-Fa-f0-9]{2}))/',
-//         'query'     => '/(?:[^a-zA-Z0-9_\-\.~!\$&\'\(\)\*\+,;=%:@\/\?]+|%(?![A-Fa-f0-9]{2}))/',
-//     ];
-    
-    function __construct($uri = null)
+    function __construct($url = null)
     {
-        $env = new Environment();
-        $host = $env['HTTP_HOST'] ?: ($env['SERVER_NAME'] ?: 'localhost');
-        $host = explode(':', $host)[0];
+        // $env = new Environment();
+        // $host = $env['HTTP_HOST'] ?? ($env['SERVER_NAME'] ?? 'localhost');
+        // $host = explode(':', $host)[0];
         $defaults = [
             'scheme'   => 'scheme',
             'user'     => null,
             'pass'     => null,
-            'host'     => $host,
+            'host'     => '',
             'port'     => null,
             'path'     => '',
             'query'    => '',
             'fragment' => '',
-            
+
             'user_info' => '',
             'authority' => '',
             'base_path' => '',
         ];
-        
-        extract($defaults);
-        
-        if (!$uri) {
-            $uri =  'http://' . $host . ($env['REQUEST_URI'] ?: '/');
+
+        if (!$url) {
+            $url = '';
         } else {
-            if (strpos($uri, '://') === false) {
-                $uri = 'scheme://' . $uri;
+            if (strpos($url, '://') === false) {
+                $url = 'scheme://' . $url;
             }
-        }
-        
-        $parsed = parse_url($uri);
-        if (!$parsed) {
-            throw new InvalidArgumentException('Invalid uri');
         }
 
-        extract($parsed);
-        
-        foreach($defaults as $k => $v) {
-            $this->$k = $$k;
-            if ($k === 'fragment')
-                break;
+        $parsed = parse_url($url);
+        if (!$parsed) {
+            throw new InvalidArgumentException('Invalid url');
         }
-        
+
+        // extract($parsed);
+
+        foreach ($defaults as $k => $v) {
+            if (isset($parsed[$k]))
+                $defaults[$k] = $parsed[$k];
+        }
+
+        parent::__construct($defaults);
         $this->_process();
     }
-    
+
     private function _process()
     {
-        $this->user_info = '';
-        
-        if ($this->user && $this->pass) {
-            $this->user_info = $this->user . ':' . $this->pass;
+        extract($this->data);
+
+        $user_info = '';
+
+        if ($user && $pass) {
+            $user_info = $user . ':' . $pass;
         }
-        
-        if ($this->scheme === 'scheme')
-            $this->scheme = '';
-            
-        if ($this->scheme === '') {
-            if ($this->port === 443) {
-                $this->scheme = 'https';
-            } else {
-                $this->scheme = 'http';
+
+        if ($scheme === 'scheme')
+            $scheme = '';
+
+        if ($scheme === '') {
+            if ($port === 443) {
+                $scheme = 'https';
+            } elseif ($port === 80) {
+                $scheme = 'http';
+            } elseif ($host) {
+                $scheme = 'http';
             }
         }
-            
-        if ($this->port) {
-            $default_port = self::$default_ports[$this->scheme] ?: null;
-            if ($default_port === $this->port) {
-                $this->port = null;
+
+        if ($port) {
+            $default_port = self::$default_ports[$scheme] ?? null;
+            if ($default_port === $port) {
+                $port = null;
             }
         }
-        
-        $this->authority = 
-            ($this->user_info ?  $this->user_info . '@' : '') .
-            $this->host . 
-            (isset($this->port) ? ':' . $this->port : '');
-        
-        $this->base_path = rtrim(ltrim($this->path, '/'), '/');
+
+        $authority = 
+            ($user_info ?  $user_info . '@' : '') .
+            $host . 
+            (isset($port) ? ':' . $port : '');
+
+        $base_path = rtrim(ltrim($path, '/'), '/');
+
+        $this->setMultiple([
+            'user_info' => $user_info,
+            'scheme' => $scheme,
+            'port' => $port,
+            'authority' => $authority,
+            'path' => $path,
+            'base_path' => $base_path,
+        ]);
     }
-    
+
     /**
      * Retrieve the scheme component of the URI.
      *
@@ -152,7 +140,7 @@ class Uri implements UriInterface
      */
     public function getScheme()
     {
-        return $this->scheme;
+        return $this->data['scheme'];
     }
 
     /**
@@ -175,7 +163,7 @@ class Uri implements UriInterface
      */
     public function getAuthority()
     {
-        return $this->authority;
+        return $this->data['authority'];
     }
 
     /**
@@ -195,7 +183,7 @@ class Uri implements UriInterface
      */
     public function getUserInfo()
     {
-        return $this->user_info;
+        return $this->data['user_info'];
     }
 
     /**
@@ -211,7 +199,7 @@ class Uri implements UriInterface
      */
     public function getHost()
     {
-        return $this->host;
+        return $this->data['host'];
     }
 
     /**
@@ -231,7 +219,7 @@ class Uri implements UriInterface
      */
     public function getPort()
     {
-        return $this->port;
+        return $this->data['port'];
     }
 
     /**
@@ -261,12 +249,12 @@ class Uri implements UriInterface
      */
     public function getPath()
     {
-        return $this->path;
+        return $this->data['path'];
     }
-    
+
     public function getBasePath()
     {
-        return $this->base_path;
+        return $this->data['base_path'];
     }
 
     /**
@@ -291,7 +279,7 @@ class Uri implements UriInterface
      */
     public function getQuery()
     {
-        return $this->query;
+        return $this->data['query'];
     }
 
     /**
@@ -312,7 +300,7 @@ class Uri implements UriInterface
      */
     public function getFragment()
     {
-        return $this->fragment;
+        return $this->data['fragment'];
     }
 
     /**
@@ -333,9 +321,9 @@ class Uri implements UriInterface
     public function withScheme($scheme)
     {
         $clone = clone $this;
-        $clone->scheme = $scheme;
+        $clone['scheme'] = $scheme;
         $clone->_process();
-        
+
         return $clone;
     }
 
@@ -356,10 +344,10 @@ class Uri implements UriInterface
     public function withUserInfo($user, $password = null)
     {
         $clone = clone $this;
-        $clone->user = $user;
-        $clone->pass = $password;
+        $clone['user'] = $user;
+        $clone['pass'] = $password;
         $clone->_process();
-        
+
         return $clone;
     }
 
@@ -378,9 +366,9 @@ class Uri implements UriInterface
     public function withHost($host)
     {
         $clone = clone $this;
-        $clone->host = $host;
+        $clone['host'] = $host;
         $clone->_process();
-        
+
         return $clone;
     }
 
@@ -404,9 +392,9 @@ class Uri implements UriInterface
     public function withPort($port)
     {
         $clone = clone $this;
-        $clone->port = $port;
+        $clone['port'] = $port;
         $clone->_process();
-        
+
         return $clone;
     }
 
@@ -435,10 +423,10 @@ class Uri implements UriInterface
     public function withPath($path)
     {
         $clone = clone $this;
-        $clone->path = $path;
+        $clone['path'] = $path;
         $clone->_process();
-        
-        return $clone;    
+
+        return $clone;
     }
 
     /**
@@ -459,9 +447,9 @@ class Uri implements UriInterface
     public function withQuery($query)
     {
         $clone = clone $this;
-        $clone->query = $query;
+        $clone['query'] = $query;
         $clone->_process();
-        
+
         return $clone;
     }
 
@@ -482,9 +470,9 @@ class Uri implements UriInterface
     public function withFragment($fragment)
     {
         $clone = clone $this;
-        $clone->fragment = $fragment;
+        $clone['fragment'] = $fragment;
         $clone->_process();
-        
+
         return $clone;
     }
 
@@ -511,20 +499,20 @@ class Uri implements UriInterface
      * @see http://tools.ietf.org/html/rfc3986#section-4.1
      * @return string
      */
-    public function __toString()    
+    public function __toString()
     {
-        $path = $this->path;
-        if ($this->authority && ($path['0'] !== '/'))
+        $path = $this['path'];
+        if ($this['authority'] && ($path['0'] !== '/'))
              $path = '/' . $path;
 
-        if (!$this->authority && ($path['0'] === '/'))
+        if (!$this['authority'] && ($path['0'] === '/'))
             $path = '/' . ltrim($path, '/');
-    
+
         return
-            ($this->scheme ? $this->scheme . '://' : '') .
-            $this->authority .
+            ($this['scheme'] ? $this['scheme'] . '://' : '') .
+            $this['authority'] .
             $path .
-            ($this->query ? '?' . $this->query : '') .
-            ($this->fragment ? '#' . $this->fragment : '');
-    }    
+            ($this['query'] ? '?' . $this['query'] : '') .
+            ($this['fragment'] ? '#' . $this['fragment'] : '');
+    }
 }

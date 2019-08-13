@@ -1,10 +1,12 @@
 <?php
 
-use IrfanTOOR\Engine;
-use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Engine\Http\Headers;
-use IrfanTOOR\Engine\Http\Response;
 use IrfanTOOR\Test;
+use IrfanTOOR\Engine;
+use IrfanTOOR\Engine\Http\{
+    Environment,
+    Headers,
+    Response
+};
 
 class ResponseTest extends Test
 {
@@ -23,8 +25,8 @@ class ResponseTest extends Test
     function testResponseInstance()
     {
         $response = $this->getResponse();
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\Response::class, $response);
-        $this->assertImplements(Psr\Http\Message\ResponseInterface::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
+        // $this->assertImplements(Psr\Http\Message\ResponseInterface::class, $response);
     }
 
     function testDefaultResponseStatus()
@@ -40,7 +42,7 @@ class ResponseTest extends Test
         $response = $this->getResponse('200', ['Engine' => 'MyEngine 0.1(test)']);
         $headers = $response->getHeaders();
         $this->assertTrue(is_array($headers));
-        
+
         foreach($headers as $k => $v) {
             $this->assertTrue(is_array($v));
         }
@@ -65,7 +67,7 @@ class ResponseTest extends Test
     function testDefaults()
     {
         $response = $this->getResponse();
-        
+
         $this->assertEquals('1.1', $response->getProtocolVersion());
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals(Engine::NAME . ' ' . Engine::VERSION, $response->getHeaders()['Engine'][0]);

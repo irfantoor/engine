@@ -16,26 +16,26 @@ class ServerRequestTest extends Test
     function testServerRequestInstance()
     {
         $request = $this->getServerRequest();
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\ServerRequest::class, $request);
-        $this->assertImplements(Psr\Http\Message\ServerRequestInterface::class, $request);
+        $this->assertInstanceOf(ServerRequest::class, $request);
+        // $this->assertImplements(Psr\Http\Message\ServerRequestInterface::class, $request);
     }
-    
+
     function testServerEnvironment()
     {
         $request = $this->getServerRequest();
-        
+
         $env = $request->getServerParams();
         $this->assertTrue(is_array($env));
         $this->assertEquals('GET', $env['REQUEST_METHOD']);
-        
+
     }
-    
+
     # todo -- test the default values inherit from environment
     function testRequestCloning()
     {
         $r1 = $this->getServerRequest();
         $r2 = clone $r1;
-        
+
         $this->assertNotEquals($r2, $r1);
         $this->assertNotSame($r2, $r1);
     }

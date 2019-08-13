@@ -21,7 +21,7 @@ $request = new Request
 );
 
 # $request->withRequestTarget('test/world')
-$request->withHeader('Engine', 'Irfan\'s Engine v1.0');
+$request = $request->withHeader('Engine', 'Irfan\'s Engine v' . IrfanTOOR\Engine::VERSION);
 
-Debug::dump($request);
-Debug::dump((string) $request->getUri());
+d($request);
+dd($request->getUri());

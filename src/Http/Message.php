@@ -4,15 +4,13 @@ namespace IrfanTOOR\Engine\Http;
 
 use Exception;
 use IrfanTOOR\Engine\Http\Stream;
-use Psr\Http\Message\MessageInterface;
-use Psr\Http\Message\StreamInterface;
 
-class Message implements MessageInterface
+class Message
 {
     protected $version;
     protected $headers;
     protected $body;
-    
+
     function __construct($init = [])
     {
         # defaults
@@ -21,24 +19,24 @@ class Message implements MessageInterface
             'headers' => [],
             'body'    => null,
         ];
-        
+
         foreach ($defaults as $k=>$v) {
             if (!isset($init[$k])) {
                 $init[$k] = $v;
             }
         }
-        
+
         $this->version = $init['version'];
         $this->headers = new Headers($init['headers']);
         $this->body    = Stream::factory($init['body']); 
     }
-    
+
     public function __clone()
     {
         $this->headers = clone $this->headers;
         $this->body = clone $this->body;
     }
-    
+
     /**
      * Retrieves the HTTP protocol version as a string.
      *
@@ -69,7 +67,7 @@ class Message implements MessageInterface
     {
         $clone = clone $this;
         $clone->version = $version;
-        
+
         return $clone;
     }
 
@@ -137,7 +135,7 @@ class Message implements MessageInterface
         } elseif (!is_array($default)) {
             $default = [];
         }
-        
+
         return $this->headers->get($name, $default);
     }
 
@@ -184,7 +182,7 @@ class Message implements MessageInterface
     {
         $clone = clone $this;
         $clone->headers->set($name, $value);
-        
+
         return $clone;
     }
 
@@ -208,7 +206,7 @@ class Message implements MessageInterface
     {
         $clone = clone $this;
         $clone->headers->add($name, $value);
-        
+
         return $clone;
     }
 
@@ -228,10 +226,10 @@ class Message implements MessageInterface
     {
         if (!$this->hasHeader($name))
             return $this;
-            
+
         $clone = clone $this;
         $clone->headers->remove($name);
-        
+
         return $clone;
     }
 
@@ -258,11 +256,11 @@ class Message implements MessageInterface
      * @return static
      * @throws \InvalidArgumentException When the body is not valid.
      */
-    public function withBody(StreamInterface $body)
+    public function withBody(Stream $body)
     {
         $clone = clone $this;
         $clone->body = new Stream($body);
-        
+
         return $clone;
     }
 

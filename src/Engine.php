@@ -12,7 +12,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "2.1";
+    const VERSION     = "3.0";
 
     protected $config;
     protected $classes;
@@ -93,7 +93,7 @@ class Engine
 
         # Set default timezone
         date_default_timezone_set($this->config("timezone", "Europe/Paris"));
-        
+
         # Sets the debug level of engine
         $dl = $this->config('debug.level', 0);
         if ($dl) {
@@ -164,7 +164,7 @@ class Engine
         # todo -- returns null class instead of null
         return isset($this->classes[$id]) ? $this->classes[$id] : null;
     }
-    
+
     /**
      * Runs the engine, the processes the request
      *
@@ -181,7 +181,7 @@ class Engine
 
         $this->finalize($request, $response, $args);
     }
-    
+
     /**
      * Process on request and/or passed arguments and returns response
      *
@@ -196,19 +196,19 @@ class Engine
         # throw new Exception('function: "process", does not exist in the derived class');
         return $response;
     }
-    
+
     /**
      * Finalizes the response and sends it
      *
      * @param Request  $request
      * @param Response $response
      * @param Array    $args
-     */    
+     */
     function finalize($request, $response, $args)
     {
         # any final processing
         # ...
-        
+
         $response->send();
     }
 }

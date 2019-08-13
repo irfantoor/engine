@@ -14,7 +14,7 @@ $s->write('Hello');
 $s->write(' ');
 $s->write('World!');
 
-Debug::dump((string) $s);
+d((string) $s);
 
 $s->seek(6);
-Debug::dump($s->getContents());
+d($s->getContents());

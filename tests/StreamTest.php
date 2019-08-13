@@ -1,7 +1,8 @@
 <?php
 
-use IrfanTOOR\Engine\Http\Stream;
 use IrfanTOOR\Test;
+
+use IrfanTOOR\Engine\Http\Stream;
 
 /**
  * @covers GuzzleHttp\Stream\Stream
@@ -25,9 +26,11 @@ class StreamTest extends Test
         $stream = new Stream($handle);
         $this->assertTrue($stream->isReadable());
         $this->assertTrue($stream->isWritable());
-        $this->assertTrue($stream->isSeekable());  
-        # $this->assertEquals('php://temp', $stream->getMetadata('uri'));
-        $this->assertInternalType('array', $stream->getMetadata());
+        $this->assertTrue($stream->isSeekable());
+        $this->assertArray($stream->getMetadata());
+        $this->assertNotZero(count($stream->getMetadata()));
+        # todo --
+        // $this->assertEquals('php://temp', $stream->getMetadata('uri'));
         $this->assertEquals(4, $stream->getSize());
         $this->assertFalse($stream->eof());
         $stream->close();
@@ -249,17 +252,17 @@ class StreamTest extends Test
         $this->assertTrue($p->eof());
         $this->assertEquals(9, $p->tell());
     }
-    
+
     public function testCloneStream()
     {
         $s = Stream::factory();
         $s->write('something');
         $t = clone $s;
-        
+
         $this->assertNotEquals($s, $t);
         $this->assertNotSame($s, $t);
         $this->assertEquals((string)$s, (string)$t);
-        
+
         $t->write('else');
         $this->assertNotEquals((string)$s, (string)$t);
     }

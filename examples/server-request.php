@@ -6,15 +6,10 @@ use IrfanTOOR\Engine\Http\Cookie;
 use IrfanTOOR\Engine\Http\ServerRequest;
 use IrfanTOOR\Debug;
 
-Debug::enable(1);
+Debug::enable(3);
 
 
-$sr = (new ServerRequest())
-    ->withHeader('User-Agent', 'Hello World v1.0')
-    ->withCookieParams([
-        'hello'  => 'world!',
-        'summer' => 'sort'
-    ]);
+$sr = new ServerRequest();
 
-Debug::dump($sr);
-Debug::dump($sr->getCookieParams());
+d($sr);
+d($sr->getCookieParams());

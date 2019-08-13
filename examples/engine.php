@@ -21,7 +21,7 @@ ob_start();
 IrfanTOOR\Debug::dump($ie);
 $contents = ob_get_clean();
 
-$response = $ie->Response();
+$response = $ie->getResponse();
 $response->write($contents);
 $response->write('Debug Level: ' . $ie->config('debug.level'));
 $response->write(', Site: ' . $ie->config('site.name') . '<' . $ie->config('site.root') . '>');

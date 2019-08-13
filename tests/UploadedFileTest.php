@@ -1,12 +1,12 @@
 <?php
 
-use IrfanTOOR\Engine\Http\Stream;
-use IrfanTOOR\Engine\Http\Uri;
-use IrfanTOOR\Engine\Http\UploadedFile;
-use Psr\Http\Message\UriInterface;
-use Psr\Http\Message\UploadedFileInterface;
-
 use IrfanTOOR\Test;
+
+use IrfanTOOR\Engine\Http\{
+    Stream,
+    Uri,
+    UploadedFile
+};
 
 class UploadedFileTest extends Test
 {
@@ -19,11 +19,11 @@ class UploadedFileTest extends Test
         }
         return $file;
     }
-    
+
     function assertUploadedFile($file)
     {
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $file);
-        $this->assertImplements(UploadedFileInterface::class, $file);
+        $this->assertInstanceOf(UploadedFile::class, $file);
+        // $this->assertImplements(UploadedFileInterface::class, $file);
     }
 
     function assertUploadedContents($file, $contents)
@@ -43,7 +43,7 @@ class UploadedFileTest extends Test
         $file = new UploadedFile(__FILE__);
         $contents = file_get_contents(__FILE__);
         $size = strlen($contents);
-        
+
         $this->assertUploadedFile($file, $contents, $size);
     }
 
@@ -65,8 +65,8 @@ class UploadedFileTest extends Test
         $error = UPLOAD_ERR_NO_FILE;
         $file = new UploadedFile(null);
 
-        $this->assertInstanceOf(IrfanTOOR\Engine\Http\UploadedFile::class, $file);
-        $this->assertImplements(UploadedFileInterface::class, $file);
+        $this->assertInstanceOf(UploadedFile::class, $file);
+        // $this->assertImplements(UploadedFileInterface::class, $file);
         $this->assertEquals($error, $file->getError());
     }
 }

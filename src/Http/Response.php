@@ -7,7 +7,7 @@ use Fig\Http\Message\StatusCodeInterface;
 use IrfanTOOR\Engine;
 use IrfanTOOR\Engine\Http\Message;
 use IrfanTOOR\Engine\Http\Stream;
-use Psr\Http\Message\ResponseInterface;
+// use Psr\Http\Message\ResponseInterface;
 
 /**
  * Representation of an outgoing, server-side response.
@@ -24,11 +24,11 @@ use Psr\Http\Message\ResponseInterface;
  * be implemented such that they retain the internal state of the current
  * message and return an instance that contains the changed state.
  */
-class Response extends Message Implements StatusCodeInterface, ResponseInterface
+class Response extends Message Implements StatusCodeInterface
 {
     protected $status;
     protected $phrase;
-    
+
     protected static $phrases = [
         // Informational 1xx
         100 => 'CONTINUE',
@@ -101,11 +101,11 @@ class Response extends Message Implements StatusCodeInterface, ResponseInterface
         510 => 'NOT_EXTENDED',
         511 => 'NETWORK_AUTHENTICATION_REQUIRED',
     ];
-    
+
     function __construct($init = [])
     {
         $env = new Environment();
-        
+
         # defaults
         $defaults = [
             'version' => str_replace('HTTP/', '', $env['SERVER_PROTOCOL']),
@@ -114,7 +114,7 @@ class Response extends Message Implements StatusCodeInterface, ResponseInterface
             'status'  => self::STATUS_OK,
             'phrase'  => '',
         ];
-        
+
         foreach ($defaults as $k=>$v) {
             if (isset($init[$k])) {
                 $defaults[$k] = $init[$k];
@@ -124,12 +124,12 @@ class Response extends Message Implements StatusCodeInterface, ResponseInterface
         }
 
         $init['headers']['Engine'] = [Engine::NAME . ' ' . Engine::VERSION];
-        
+
         parent::__construct($init);
         $this->status = $defaults['status'];
         $this->phrase = $defaults['phrase'];
     }
-    
+
     /**
      * Gets the response status code.
      *
@@ -168,7 +168,7 @@ class Response extends Message Implements StatusCodeInterface, ResponseInterface
         $clone = clone $this;
         $clone->status = $code;
         $clone->phrase = $reasonPhrase;
-        
+
         return $clone;
     }
 
@@ -189,13 +189,13 @@ class Response extends Message Implements StatusCodeInterface, ResponseInterface
     {
         if ($this->phrase)
             return $this->phrase;
-            
+
         if (isset(self::$phrases[$this->status]))
             return self::$phrases[$this->status];
-        
+
         return 'NOT_DEFINED';
     }
-        
+
     function send()
     {
         $status = $this->getStatusCode();
@@ -217,7 +217,7 @@ class Response extends Message Implements StatusCodeInterface, ResponseInterface
         while (!$stream->eof()) {
             echo $stream->read(1024 * 8);
         }
-        
+
         $stream->close();
 
         exit;
