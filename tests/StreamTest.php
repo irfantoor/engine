@@ -27,10 +27,9 @@ class StreamTest extends Test
         $this->assertTrue($stream->isReadable());
         $this->assertTrue($stream->isWritable());
         $this->assertTrue($stream->isSeekable());
+        # todo -- $this->assertEquals('php://temp', $stream->getMetadata('uri'));
         $this->assertArray($stream->getMetadata());
         $this->assertNotZero(count($stream->getMetadata()));
-        # todo --
-        // $this->assertEquals('php://temp', $stream->getMetadata('uri'));
         $this->assertEquals(4, $stream->getSize());
         $this->assertFalse($stream->eof());
         $stream->close();
