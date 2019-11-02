@@ -9,7 +9,8 @@ use IrfanTOOR\Engine\Http\{
     Request,
     Response,
     ServerRequest,
-    UploadedFile
+    UploadedFile,
+    Uri
 };
 
 class MockResponse extends Response
@@ -64,6 +65,7 @@ class EngineTest extends Test
         $this->assertInstanceOf(Response::class, $ie->getResponse());
         $this->assertInstanceOf(ServerRequest::class, $ie->getServerRequest());
         $this->assertInstanceOf(UploadedFile::class, $ie->getUploadedFile());
+        $this->assertInstanceOf(Uri::class, $ie->getUri());
     }
 
     public function testConfig()
@@ -124,6 +126,10 @@ class EngineTest extends Test
                     ],
                 ],
 
+                'Uri' => [
+                    'scheme' => 'ie',
+                    'host' => 'irfantoor.com',
+                ],
             ],
         ];
 
@@ -152,6 +158,16 @@ class EngineTest extends Test
         $this->assertInstanceOf(UploadedFile::class, $f1);
         $this->assertEquals($f1, $f2);
         $this->assertNotSame($f1, $f2);
+
+        # Uri
+        $uri = $ie->getUri();
+        $this->assertEquals('ie', $uri->get('scheme'));
+        $this->assertEquals('irfantoor.com', $uri->get('host'));
+
+        $ie = $this->getEngine();
+        $uri = $ie->getUri();
+        $this->assertEquals('http', $uri->get('scheme'));
+        $this->assertEquals('localhost', $uri->get('host'));
     }
 
     public function testGetVersion()

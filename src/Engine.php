@@ -12,7 +12,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "3.0.1";
+    const VERSION     = "3.0.2";
 
     protected $config;
     protected $classes;
@@ -80,8 +80,7 @@ class Engine
                 'Environment',
                 'Request',
                 'Response',
-                'ServerRequest',
-                'Uri',
+                'ServerRequest'
             ] as $name
         ) {
             $cname = $this->classname($name);
@@ -90,6 +89,20 @@ class Engine
                 return new $cname($defaults);
             });
         }
+
+        # Initialize Uri
+        $env = $this->getEnvironment();
+
+        $scheme = $this->config('default.Uri.scheme', $env['REQUEST_SCHEME'] ?? 'http');
+        $host = $this->config('default.Uri.host', $env['HTTP_HOST'] ?? ($env['SERVER_NAME'] ?? 'localhost'));
+        $host = explode(':', $host)[0]; // strip the port if present
+        $url = $scheme . '://' . $host . $env['REQUEST_URI'];
+
+        $name = 'Uri';
+        $cname = $this->classname($name);
+        $this->container->set('Uri', function() use($cname, $url) {
+            return new $cname($url);
+        });
 
         # Set default timezone
         date_default_timezone_set($this->config("timezone", "Europe/Paris"));
