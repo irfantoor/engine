@@ -17,7 +17,7 @@ class ServerRequestTest extends Test
     {
         $request = $this->getServerRequest();
         $this->assertInstanceOf(ServerRequest::class, $request);
-        // $this->assertImplements(Psr\Http\Message\ServerRequestInterface::class, $request);
+        $this->assertInstanceOf(Request::class, $request);
     }
 
     function testServerEnvironment()

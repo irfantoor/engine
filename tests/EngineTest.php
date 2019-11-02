@@ -164,6 +164,9 @@ class EngineTest extends Test
         $this->assertEquals('ie', $uri->get('scheme'));
         $this->assertEquals('irfantoor.com', $uri->get('host'));
 
+        $req = $ie->getServerRequest();
+        $this->assertEquals($uri, $req->getUri());
+
         $ie = $this->getEngine();
         $uri = $ie->getUri();
         $this->assertEquals('http', $uri->get('scheme'));

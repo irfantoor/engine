@@ -12,7 +12,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "3.0.2";
+    const VERSION     = "3.0.3";
 
     protected $config;
     protected $classes;
@@ -102,6 +102,15 @@ class Engine
         $cname = $this->classname($name);
         $this->container->set('Uri', function() use($cname, $url) {
             return new $cname($url);
+        });
+
+        # initialize Server Request
+        $name = 'ServerRequest';
+        $cname = $this->classname($name);
+        $this->container->set('ServerRequest', function() use($cname) {
+            $defaults = $this->config('default.ServerRequest', []);
+            $defaults['uri'] = $this->getUri();
+            return new $cname($defaults);
         });
 
         # Set default timezone

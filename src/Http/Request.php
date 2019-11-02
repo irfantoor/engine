@@ -42,7 +42,8 @@ class Request extends Message implements RequestMethodInterface
 
         $defaults = [
             'method' => self::METHOD_GET,
-            'uri'    => 'http://localhost',
+            'url'    => 'http://localhost',
+            'uri'    => null,
         ];
 
         foreach ($defaults as $k=>$v) {
@@ -52,7 +53,7 @@ class Request extends Message implements RequestMethodInterface
         }
 
         $this->method = $defaults['method'];
-        $this->uri    = new Uri($defaults['uri']);
+        $this->uri    = $defaults['uri'] ?? new Uri($defaults['url']);
     }
 
     function __clone()

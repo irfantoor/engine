@@ -6,13 +6,15 @@ use IrfanTOOR\Engine\Http\{
     Request,
     Uri
 };
-// use Fig\Http\Message\RequestMethodInterface;
-// use Psr\Http\Message\{
-//     MessageInterface,
-//     RequestInterface,
-//     UriInterface,
-//     StreamInterface
-// };
+
+use Fig\Http\Message\RequestMethodInterface;
+
+use Psr\Http\Message\{
+    MessageInterface,
+    RequestInterface,
+    StreamInterface,
+    UriInterface
+};
 
 /**
  * Representation of an outgoing, client-side request.
@@ -34,29 +36,38 @@ use IrfanTOOR\Engine\Http\{
  * message and return an instance that contains the changed state.
  */
 
-// class MockRequest extends Request # implements RequestInterface, RequestMethodInterface
-// {
-//     function withUri(UriInterface $uri, $preserveHost = false)
-//     {
-//         return parent::withUri($uri, $preserveHost);
-//     }
-// }
+class MockRequest extends Request implements RequestInterface, RequestMethodInterface
+{
+    function withUri(Psr\Http\Message\UriInterface $uri, $preserveHost = false)
+    {
+        return parent::withUri($uri, $preserveHost);
+    }
+
+    function withBody(Psr\Http\Message\StreamInterface $body)
+    {
+        return parent::withBody($body);
+    }
+}
+
+class MockUri extends Uri implements Psr\Http\Message\UriInterface
+{
+    function withUri(Psr\Http\Message\UriInterface $uri)
+    {
+        return parent::withUri($uri);
+    }
+}
 
 class RequestTest extends Test
 {
-    function getRequest($env=[])
+    function getRequest($init=[])
     {
-        return new Request();
+        return new MockRequest($init);
     }
 
     function testRequestInstance()
     {
         $request = $this->getRequest();
-        $this->assertInstanceOf(
-            IrfanTOOR\Engine\Http\Request::class,
-            $request
-        );
-
+        $this->assertImplements(RequestMethodInterface::class, $request);
         $this->assertInstanceOf(Request::class, $request);
         $this->assertInstanceOf(Message::class, $request);
     }
@@ -104,7 +115,7 @@ class RequestTest extends Test
     function testRequestWithUri()
     {
         $request = $this->getRequest();
-        $r2 = $request->withUri(new Uri('https://example.com:80/'));
+        $r2 = $request->withUri(new MockUri('https://example.com:80/'));
 
         $this->assertEquals('https://example.com:80/', (string) $r2->getUri());
     }
@@ -124,5 +135,28 @@ class RequestTest extends Test
         $this->assertEquals($uri1, $uri2);
         $this->assertNotSame($uri1, $uri2);
         $this->assertNotSame($uri1, $uri3);
+    }
+
+    function testRequestInit()
+    {
+        $url = 'https://example.com:8080/hello/world?something=here&somewhat=present';
+        $r = $this->getRequest([
+            'method' => 'POST',
+            'url' => $url,
+        ]);
+
+        $this->assertEquals('POST', $r->getMethod());
+        $uri = $r->getUri();
+        $this->assertEquals('https', $uri->getScheme());
+        $this->assertEquals($url, $uri->__toString());
+
+        $r = $this->getRequest([
+            'method' => 'POST',
+            'uri' => $uri,
+        ]);
+        
+        $this->assertEquals($uri, $r->getUri());
+        $this->assertEquals('https', $uri->getScheme());
+        $this->assertEquals($url, $uri->__toString());
     }
 }
