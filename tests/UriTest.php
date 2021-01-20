@@ -180,10 +180,11 @@ class UriTest extends Test
         $this->assertNull($uri->getPort());
     }
 
+    /**
+     * throws: InvalidArgumentException::class
+     */
     function testExceptionWhenUriIsInvalid()
     {
-        $this->assertException(function(){
-            new Uri(':');
-        }, 'InvalidArgumentException');
+        new Uri(':');
     }
 }

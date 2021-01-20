@@ -38,20 +38,20 @@ use Psr\Http\Message\{
 
 class MockRequest extends Request implements RequestInterface, RequestMethodInterface
 {
-    function withUri(Psr\Http\Message\UriInterface $uri, $preserveHost = false)
+    function withUri(UriInterface $uri, $preserveHost = false)
     {
         return parent::withUri($uri, $preserveHost);
     }
 
-    function withBody(Psr\Http\Message\StreamInterface $body)
+    function withBody(StreamInterface $body)
     {
         return parent::withBody($body);
     }
 }
 
-class MockUri extends Uri implements Psr\Http\Message\UriInterface
+class MockUri extends Uri implements UriInterface
 {
-    function withUri(Psr\Http\Message\UriInterface $uri)
+    function withUri(UriInterface $uri)
     {
         return parent::withUri($uri);
     }

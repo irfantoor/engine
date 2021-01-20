@@ -8,9 +8,7 @@ use IrfanTOOR\Engine\Http\{
     Message,
     Uri
 };
-// use Psr\Http\Message\MessageInterface;
-// use Psr\Http\Message\RequestInterface;
-// use Psr\Http\Message\UriInterface;
+use Psr\Http\Message\UriInterface;
 
 /**
  * Representation of an outgoing, client-side request.
@@ -185,7 +183,7 @@ class Request extends Message implements RequestMethodInterface
      * @param bool $preserveHost Preserve the original state of the Host header.
      * @return static
      */
-    function withUri(Uri $uri, $preserveHost = false)
+    function withUri(UriInterface $uri, $preserveHost = false)
     {
         # todo -- preserve host logic
         $clone = clone $this;

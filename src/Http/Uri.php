@@ -5,6 +5,7 @@ namespace IrfanTOOR\Engine\Http;
 use InvalidArgumentException;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Engine\Http\Environment;
+use Psr\Http\Message\UriInterface;
 
 /**
  * Value object representing a URI.
@@ -26,7 +27,7 @@ use IrfanTOOR\Engine\Http\Environment;
  *
  * @link http://tools.ietf.org/html/rfc3986 (the URI specification)
  */
-class Uri extends Collection
+class Uri extends Collection implements UriInterface
 {
     protected static $default_ports = [
         'http'  => 80,
@@ -502,10 +503,11 @@ class Uri extends Collection
     public function __toString()
     {
         $path = $this['path'];
-        if ($this['authority'] && ($path['0'] !== '/'))
+
+        if ($this['authority'] && ($path === '' || $path['0'] !== '/'))
              $path = '/' . $path;
 
-        if (!$this['authority'] && ($path['0'] === '/'))
+        if (!$this['authority'] && ($path !== '' && $path['0'] === '/'))
             $path = '/' . ltrim($path, '/');
 
         return

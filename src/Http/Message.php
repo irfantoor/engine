@@ -4,8 +4,13 @@ namespace IrfanTOOR\Engine\Http;
 
 use Exception;
 use IrfanTOOR\Engine\Http\Stream;
+use Psr\Http\Message\{
+    MessageInterface,
+    RequestInterface,
+    StreamInterface,
+};
 
-class Message
+class Message implements MessageInterface
 {
     protected $version;
     protected $headers;
@@ -256,7 +261,7 @@ class Message
      * @return static
      * @throws \InvalidArgumentException When the body is not valid.
      */
-    public function withBody(Stream $body)
+    public function withBody(StreamInterface $body)
     {
         $clone = clone $this;
         $clone->body = new Stream($body);

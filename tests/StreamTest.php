@@ -212,18 +212,19 @@ class StreamTest extends Test
         $this->assertSame($s, Stream::factory($s));
     }
 
+    /**
+     * throws: InvalidArgumentException::class
+     */
     public function testThrowsExceptionForUnknown()
     {
-        $this->assertException(function(){
-            Stream::factory(new \stdClass());
-        }, InvalidArgumentException::class);
+        Stream::factory(new \stdClass());
     }
 
     public function testReturnsCustomMetadata()
     {
         $s = Stream::factory('foo', ['metadata' => ['hwm' => 3]]);
         $this->assertEquals(3, $s->getMetadata('hwm'));
-        $this->assertArrayHasKey('hwm', $s->getMetadata());
+        $this->assertArrayHasKey($s->getMetadata(), 'hwm');
     }
 
     public function testCanSetSize()
