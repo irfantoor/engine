@@ -1,235 +1,308 @@
 <?php
 
+/**
+ * IrfanTOOR\Engine
+ * php version 7.3
+ *
+ * @author    Irfan TOOR <email@irfantoor.com>
+ * @copyright 2021 Irfan TOOR
+ */
+
 namespace IrfanTOOR;
 
 use Exception;
 use IrfanTOOR\Collection;
-use IrfanTOOR\Container;
 use IrfanTOOR\Debug;
-use IrfanTOOR\Engine\Constants;
+use IrfanTOOR\Engine\{
+    ExceptionHandler,
+    ShutdownHandler
+};
 
+use IrfanTOOR\Container;
+
+use Psr\Http\Message\{
+    RequestInterface,
+    ResponseInterface,
+    ServerRequestInterface,
+};
+
+/**
+ * Irfan's Engine -- can be used to receive the ServerRequest, assign a
+ * RequestHandler to handle it and send the generated Response. It can
+ * handle the basic configuration, Exceptions and unexpected Shutdowns etc.
+ */
 class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "3.0.5";
+    const VERSION     = "4.0.0-alfa";
 
-    protected $config;
-    protected $classes;
+    /**
+     * status values, which indicate the possible state of the engine at a given
+     * point in time
+     */
+    const STATUS_OK          =  1;
+    const STATUS_TRANSIT     =  0;
+    const STATUS_EXCEPTION   = -1;
+    const STATUS_ERROR       = -2;
+    const STATUS_FATAL_ERROR = -3;
+
+    /** @var Container */
     protected $container;
 
+    /** @var int -- status of the engine */
+    protected static $status;
+
+    /** @var  Collection -- The configuration collection */
+    protected $config;
+
+    /** @var  string -- Http provider */
+    protected $provider;
+
+    /** @var callback -- Request handler callback */
+    protected $handler;
+
     /*
-     * Constructs the Irfan's Engine
-     */
-    function __construct($config=[])
-    {
-        # preprocess config
-        # default env variables to be merged with Server Request Environment
-        if (isset($config['default']['Environment'])) {
-            $sre = isset($config['default']['ServerRequest']['env'])
-                        ? $config['default']['ServerRequest']['env']
-                        : [];
-            $sre = array_merge($config['default']['Environment'], $sre);
-            $config['default']['ServerRequest']['env'] = $sre;
-        }
-
-        $this->config    = new Collection($config);
-        $this->container = new Container();
-
-        # Default classes can be overriden by $config['default']['classes']
-        # e.g. $config['default']['classes']['Environmet'] = 'My\\Environment';
-        $defaults = [
-            # default factories
-            'Cookie'        => 'IrfanTOOR\\Engine\\Http\\Cookie',
-            'UploadedFile'  => 'IrfanTOOR\\Engine\\Http\\UploadedFile',
-
-            # default classes
-            'Environment'   => 'IrfanTOOR\\Engine\\Http\\Environment',
-            'Request'       => 'IrfanTOOR\\Engine\\Http\\Request',
-            'Response'      => 'IrfanTOOR\\Engine\\Http\\Response',
-            'ServerRequest' => 'IrfanTOOR\\Engine\\Http\\ServerRequest',
-            'Uri'           => 'IrfanTOOR\\Engine\\Http\\Uri',
-        ];
-
-        $this->classes = $this->config('default.classes', []);
-
-        foreach ($defaults as $k => $v) {
-            if (!isset($this->classes[$k])) {
-                $this->classes[$k] = $v;
-            }
-        }
-
-        # Factory functions for Cookie and Uploaded file
-        foreach (
-            [
-                'UploadedFile',
-                'Cookie'
-            ] as $name
-        ) {
-            $cname = $this->classname($name);
-            $this->container->factory($name, function($args = []) use($cname) {
-                return new $cname($args);
-            });
-        }
-
-        # Initialize other default class instances
-        foreach (
-            [
-                # 'UploadedFile',
-                'Environment',
-                'Request',
-                'Response',
-                'ServerRequest'
-            ] as $name
-        ) {
-            $cname = $this->classname($name);
-            $defaults = $this->config('default.' . $name, []);
-            $this->container->set($name, function() use($cname, $defaults) {
-                return new $cname($defaults);
-            });
-        }
-
-        # Initialize Uri
-        $env = $this->getEnvironment();
-
-        $scheme = $this->config('default.Uri.scheme', $env['REQUEST_SCHEME'] ?? 'http');
-        $host = $this->config('default.Uri.host', $env['HTTP_HOST'] ?? ($env['SERVER_NAME'] ?? 'localhost'));
-        $host = explode(':', $host)[0]; // strip the port if present
-        $url = $scheme . '://' . $host . $env['REQUEST_URI'];
-
-        $name = 'Uri';
-        $cname = $this->classname($name);
-        $this->container->set('Uri', function() use($cname, $url) {
-            return new $cname($url);
-        });
-
-        # initialize Server Request
-        $name = 'ServerRequest';
-        $cname = $this->classname($name);
-        $this->container->set('ServerRequest', function() use($cname) {
-            $defaults = $this->config('default.ServerRequest', []);
-            $defaults['uri'] = $this->getUri();
-            return new $cname($defaults);
-        });
-
-        # Set default timezone
-        date_default_timezone_set($this->config("timezone", "Europe/Paris"));
-
-        # Sets the debug level of engine
-        $dl = $this->config('debug.level', 0);
-        if ($dl) {
-            Debug::enable($dl);
-        } else {
-            error_reporting(0);
-        }
-    }
-
-    /**
-     * Calling a non-existant method on Engine checks to see if there's an item
-     * in the container returns it or returns a class of the same name.
+     * Irfan's Engine constructor
      *
-     * @param string $method
-     * @param array $args
-     *
-     * @return mixed
+     * @param array $init Array to initialize the engine
      */
-    public function __call($method, $args)
+    function __construct($init = [])
     {
-        if (strpos($method, 'get') === 0) {
-            $m = substr($method, 3);
-            if ($this->container->has($m)) {
-                $obj = $this->container[$m];
-                if (is_callable($obj)) {
-                    return call_user_func_array($obj, $args);
-                } else {
-                    return $obj;
+        ob_start();
+        self::$status = $init['status'] ?? self::STATUS_TRANSIT;
+
+        # shutdown handler
+        register_shutdown_function(
+            function () {
+                $contents = ob_get_clean();
+                // Debug::enable(0);
+
+                if (self::STATUS_OK === self::$status) {
+                    echo $contents;
+
+                    $error = error_get_last();
+                    throw new Exception($error['message']);
+                    if ($error)
+                        print_r($error);
+
+                    return;
                 }
+
+                $response = 
+                    (new ShutdownHandler(self::NAME, self::VERSION, self::$status))
+                    ->handle($contents)
+                ;
+
+                $this->send($response);
             }
+        );
+
+        $init = is_array($init) ? $init : [];
+
+        # initial debug while warm up
+        $dl = $init['debug']['level'] ?? 0;
+        $this->enableDebug($dl);
+
+        # load the config from the file
+        $file = $init['config_file'] ?? null;
+
+        if ($file && is_string($file)) {
+            if (!is_file($file))
+                throw new \RuntimeException("Config file: $file, does not exist.");
+            
+            $config_from_file = require $file;
+            
+            if (!is_array($config_from_file))
+                throw new \RuntimeException(
+                    "Config file: $file, does not return an array."
+                );
+            
+            $init = array_merge($init, $config_from_file);
+            unset($init['config_file']);
         }
 
-        throw new Exception("Unknown method: '$method'");
-    }
+        # config
+        $this->config = new Collection($init);
+        $this->config->lock();
 
-    /**
-     * Returns the Version
-     *
-     * @return string version
-     */
-    public function getVersion()
-    {
-        return self::VERSION;
+        # readjust the debug level
+        $config_dl = $this->config('debug.level', 0);
+        if ($config_dl !== $dl)
+            $this->enableDebug($config_dl);
+
+        # container
+        $this->container = new Container();
+        $this->container->addExtension('di', new \DI\Container());
+
+        # default povider
+        $this->provider = 
+            rtrim($this->config('http.provider', 'IrfanTOOR\\Http'), "\\")
+            . "\\"
+        ;
+
+        # Default timezone Europ/Paris (+1)
+        date_default_timezone_set(
+            $this->config('admin.timezone', 'Europe/Paris')
+        );
     }
 
     /**
      * Returns the config element
      *
-     * @param string $id
-     * @param mixed  $default
+     * @param string $key     Key of the config item
+     * @param mixed  $default Default value associated with the config key
      *
      * @return mixed
      */
-    public function config($id, $default = null)
+    public function config(string $key, $default = null)
     {
-        return $this->config->get($id, $default);
+        return $this->config->get($key, $default);
     }
 
     /**
-     * Returns the default or configured classname with namespace
-     *
-     * @param string $id
-     *
-     * @return string
+     * Intercept the calls to create, createFromEnvironment/createFromGlobals
      */
-    public function classname($id)
+    public function __call($method, $args = [])
     {
-        # todo -- returns null class instead of null
-        return isset($this->classes[$id]) ? $this->classes[$id] : null;
+        $class = $args[0];
+        $args  = $args[1] ?? [];
+
+        switch ($method) {
+            case 'createFromEnvironment':
+            case 'createFromGlobals':
+                $fclass = $this->config(
+                    'provider.mappings.' . $class, 
+                    $this->provider . $class . 'Factory'
+                );
+
+                try {
+                    $factory = $this->container->make($fclass, $args);
+                } catch (\Throwable $e) {
+                    $fclass = $this->provider . 'Factory\\' . $class . "Factory";
+                    $factory = $this->container->make($fclass, $args);
+                }
+
+                if (method_exists($factory, 'createFromEnvironment'))
+                    return call_user_func_array(
+                        [$factory, 'createFromEnvironment'],
+                        $args
+                    );
+                elseif(method_exists($factory, 'createFromGlobals'))
+                    return call_user_func_array(
+                        [$factory, 'createFromGlobals'],
+                        $args
+                    );
+
+            case 'create':
+                $class = $this->config(
+                    'provider.mappings.' . $class, 
+                    $this->provider . $class
+                );
+
+                return $this->container->make($class, $args);        
+        }
+    }
+
+    /**
+     * Enables the debuging
+     *
+     * @param int $level Debug level, can be from 0 to 3, default value is 1
+     */
+    public function enableDebug(int $level = 1)
+    {
+        Debug::enable($level);
+
+        # Use this Exception handler instead of Debug's
+        set_exception_handler(
+            function ($e) {
+                self::$status = self::STATUS_EXCEPTION;
+                $handler = new ExceptionHandler();
+                $handler->handle($e);
+            }
+        );
+    }
+
+    /**
+     * Adds a request handler to engine
+     *
+     * @param callback|RequestHandler $handler
+     */
+    public function addHandler($handler)
+    {
+        $this->handler = $handler;
+    }
+
+    /**
+     * Handles the given Request
+     *
+     * @param ServerRequest $request
+     * @return Response
+     */
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $response = null;
+
+        if (!$this->handler)
+            throw new Exception("No handler defined", 1);
+
+        $response =
+            method_exists($this->handler, 'handle')
+            ? $this->handler->handle($request)
+            : $this->handler->__invoke($request)
+        ;
+
+        if (!$response || !is_a($response, ResponseInterface::class)) {
+            throw new Exception('Response not returned by the handler');
+        }
+
+        return $response->withHeader("Engine", self::NAME . " v" . self::VERSION);
     }
 
     /**
      * Runs the engine, the processes the request
-     *
      */
-    function run()
+    public function run()
     {
-        $request  = $this->getServerRequest();
-        $response = $this->getResponse();
-        $uri      = $request->getUri();
-        $basepath = $uri->getBasePath();
-        $args     = explode('/', htmlspecialchars($basepath));
-
-        $response = $this->process($request, $response, $args);
-
-        $this->finalize($request, $response, $args);
+        $request = $this->createFromEnvironment('ServerRequest');
+        $response = $this->handle($request);
+        $this->send($response);
     }
 
     /**
-     * Process on request and/or passed arguments and returns response
+     * Send the response to the client
      *
-     * @param ServerRequestInterface $request
-     * @param ResponseInterface      $response
-     * @param Array                  $args
-     *
-     * @return ResponseInterface $response
+     * @param ResponseInterface $response
      */
-    function process($request, $response, $args)
+    public function send(ResponseInterface $response)
     {
-        # throw new Exception('function: "process", does not exist in the derived class');
-        return $response;
-    }
+        if (!headers_sent()) {
+            # send status header
+            $status = $response->getStatusCode();
+            $http_line = sprintf('HTTP/%s %s %s',
+                $response->getProtocolVersion(),
+                $response->getStatusCode(),
+                $response->getReasonPhrase()
+            );
 
-    /**
-     * Finalizes the response and sends it
-     *
-     * @param Request  $request
-     * @param Response $response
-     * @param Array    $args
-     */
-    function finalize($request, $response, $args)
-    {
-        # any final processing
-        # ...
+            # send headers
+            foreach ($response->getHeaders() as $k => $v)
+                header($k . ":" . $response->getHeaderLine($k));
+        }
 
-        $response->send();
+        # send body of response
+        $stream = $response->getBody();
+
+        if ($stream->isSeekable())
+            $stream->rewind();
+
+        while (!$stream->eof()) {
+            echo $stream->read(8192);
+        }
+
+        $stream->close();
+
+        # to avoid shutdown handler processing
+        self::$status = self::STATUS_OK;
     }
 }

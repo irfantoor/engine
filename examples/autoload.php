@@ -8,4 +8,3 @@ foreach (array(__DIR__ . '/../../autoload.php', __DIR__ . '/../vendor/autoload.p
 }
 
 unset($file);
-

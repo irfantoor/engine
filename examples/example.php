@@ -1,73 +1,28 @@
 <?php
 
+# php -S localhost:8000 example.php
+
 require 'autoload.php';
 
-use IrfanTOOR\Engine;
 use IrfanTOOR\Debug;
 
-define('HACKER_MODE', true);
-
-class Controller
-{
-    protected $ie;
-
-    function __construct($ie)
-    {
-        $this->ie = $ie;
-    }
-
-    function color($txt, $color)
-    {
-        return '<span style="color:' . $color . '">' . $txt . '</span>';
-    }
-
-    function pre($txt)
-    {
-        return '<pre>' . $txt . '</pre>';
-    }
-
-    function defaultMethod($request, $response, $args)
-    {
-        $c = new IrfanTOOR\Console();
-        
-        ob_start();
-        $c->write($request->getMethod(), 'blue');
-        $c->write(' : ', 'yellow');
-        $c->writeln('Hello World!', 'red');
-        $contents = ob_get_clean();
-
-        $response->write($contents . print_r($args, 1));
-
-        return $response->withStatus(666, 'Tah Dah!');
-    }
-}
-
-$ie = new Engine([
-    'debug' => [
-        'level' => 2,
-    ],
+$ie = new IrfanTOOR\Engine([
+	'debug' => [
+		'level' => 2
+	],
 ]);
 
+$ie->addHandler(function ($request) use ($ie){
+	$response = $ie->create('Response');
+	$key = $request->getQueryParams()['key'] ?? null;
 
-$request = $ie->getServerRequest();
-$response = $ie->getResponse();
-$method = $request->getMethod();
+	if ($key)
+		$result = ['hash' => md5($key)];
+	else
+		$result = ['error' => 'key not provided as $_GET variable'];
 
-switch($method) {
-    case 'GET':
-        $response->write($method . ': Hello World!');
-        break;
-    
-    case 'SMART':
-        $c = new Controller($ie);
-        $args = explode('/',$request->getUri()->getBasePath());
-        $response = $c->defaultMethod($request, $response, $args);
-        break;
-        
-    default:
-        $response->write($method . ': default');
-        break;
-}
+	$response->getBody()->write(json_encode($result));
+	return $response->withHeader('Content-Type', 'text/json');
+});
 
-$response->send();
-
+$ie->run();

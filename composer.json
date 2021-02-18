@@ -12,25 +12,17 @@
     ],
     "require": {
         "php": ">=7.3",
-        "irfantoor/terminal": "~0.1",
         "irfantoor/debug": "~0.6",
-        "irfantoor/command": "~0.5",
         "irfantoor/collection": "~3.0",
-        "irfantoor/container": "~1.0",
-        "fig/http-message-util": "~1.1",
-        "psr/http-message": "~1.0",
-        "psr/http-factory": "~1.0"
+        "irfantoor/container": "~1.1",
+        "irfantoor/http": "^0.1.0"
     },
     "require-dev": {
         "irfantoor/test": "~0.7"
     },
     "autoload": {
-        "classmap": [
-            "src/"
-        ],
         "psr-4": {
-            "IrfanTOOR\\": "src",
-            "IrfanTOOR\\Engine\\": "src"
+            "IrfanTOOR\\": "src"
         }
     }
 }

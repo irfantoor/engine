@@ -3,216 +3,255 @@
 use IrfanTOOR\Test;
 
 use IrfanTOOR\Engine;
-use IrfanTOOR\Engine\Http\{
+use IrfanTOOR\Debug;
+use IrfanTOOR\Http\{
     Cookie,
     Environment,
     Request,
     Response,
     ServerRequest,
+    Stream,
     UploadedFile,
     Uri
 };
+use Psr\Http\Message\{
+    MessageInterface,
+    RequestInterface,
+    ResponseInterface,
+    ServerRequestInterface,
+    UploadedFileInterface,
+    UriInterface
+};
 
-class MockResponse extends Response
+class EngineTest extends Test
 {
+    function getEngine($init = [])
+    {
+        # if we wont set it, it might make the this class die silently!
+        if (!isset($init['status']))
+            $init['status'] = Engine::STATUS_OK;
+
+        if (!isset($init['debug']))
+            $init['debug'] = ['level' => 2];
+
+        return new MockEngine($init);
+    }
+
+    function testInstance()
+    {
+        $ie = $this->getEngine();
+
+        $this->assertInstanceOf(Engine::class, $ie);
+        $this->assertString(Engine::NAME);
+        $this->assertString(Engine::DESCRIPTION);
+        $this->assertString(Engine::VERSION);
+    }
+
+    function testDefaults()
+    {
+        $ie = new MockEngine();
+        $this->assertEquals([], $ie->get('config')->toArray());
+
+        $ie = $this->getEngine();
+        $this->assertEquals('IrfanTOOR\\Http\\', $ie->get('provider'));
+    }
+
+    function testInit()
+    {
+        $config = [
+            'status' => Engine::STATUS_OK,
+            'debug' => [
+                'level' => 1,
+            ],
+            'hello' => 'world',
+        ];
+
+        $ie = $this->getEngine($config);
+
+        foreach ($config as $k => $v) {
+            $this->assertEquals($v, $ie->config($k));
+        }
+    }    
+
+    function testInitConfigFile()
+    {
+        $config = require("folder/config.php");
+        $ie = $this->getEngine([
+            'config_file' => __DIR__ . "/folder/config.php"
+        ]);
+
+        foreach ($config as $k => $v) {
+            $this->assertEquals($v, $ie->config($k));
+        }
+    }
+
+    function testExceptionHandler()
+    {
+        # todo -- verify that the exceptions are handled
+    }
+
+    function testShutdownHandler()
+    {
+        # todo -- verify that the unexpected shutdown is handled
+    }
+
+    function testCreate()
+    {
+        $ie = $this->getEngine();
+
+        $classes = [
+            'Request',
+            'Response',
+            'ServerRequest',
+            'UploadedFile',
+            'Uri'
+        ];
+
+        foreach ($classes as $classname) {
+            $class = $ie->create($classname);
+            $classname = 'IrfanTOOR\\Http\\' . $classname;
+            $this->assertInstanceOf($classname, $class);
+        }
+    }
+
+    function testCreateFromEnvironment()
+    {
+        $ie = $this->getEngine();
+
+        $classes = [
+            'ServerRequest',
+            'Uri'
+        ];
+
+        foreach ($classes as $classname) {
+            $class = $ie->createFromEnvironment($classname);
+            $classname = 'IrfanTOOR\\Http\\' . $classname;
+            $this->assertInstanceOf($classname, $class);
+        }
+    }
+
+    function testEnableDebug()
+    {
+        $ie = $this->getEngine();
+        $ie->enableDebug(0);
+        $this->assertEquals(0, Debug::getLevel());
+
+        $ie->enableDebug(1);
+        $this->assertEquals(1, Debug::getLevel());
+
+        $ie->enableDebug(2);
+        $this->assertEquals(2, Debug::getLevel());
+
+        # todo -- verify that the exceptions are handled
+    }
+
+    function testAddHandler()
+    {
+        $ie = $this->getEngine();
+        $response = $ie->create('Response');
+
+        $ie->addHandler(function($request) use($response){
+            $this->assertInstanceOf(Request::class, $request);
+            $response->getBody()->write('hello world by handler');
+            return $response;
+        });
+
+        $ie->run();
+        $this->assertInstanceOf(Response::class, $ie->get('response'));
+        $this->assertEquals("hello world by handler", (string) $ie->get('contents'));
+    }
+
+    /**
+     * throws: Exception::class
+     * message: No handler defined
+     */
+    function testNoHandlerDefined()
+    {
+        $ie = $this->getEngine();
+        $ie->run();
+    }
+
+    /**
+     * throws: Exception::class
+     * message: Response not returned by the handler
+     */
+    function testHandlerNotReturningRequest()
+    {
+        $ie = $this->getEngine();
+        $ie->addHandler(function ($request) {
+            return null;
+        });
+
+        $ie->run();
+    }
+
+    function testRunandSend()
+    {
+        $ie = $this->getEngine();
+        $response = $ie->create('Response');
+
+        $this->assertMethod($ie, 'run');
+        $this->assertMethod($ie, 'send');
+
+        # send/handler is not called yet
+        $this->assertNull($ie->get('response'));
+
+        $ie->send($response);
+        $r = $ie->get('response');
+
+        # send was called
+        $this->assertNotNull($r);
+        $this->assertInstanceOf(Response::class, $r);
+
+        # handler was not called
+        $this->assertEquals("", (string) $ie->get('contents'));
+
+        $ie = $this->getEngine();
+        $response = $ie->create('Response');
+
+        $ie->addHandler(function($request) use($response){
+            $this->assertInstanceOf(Request::class, $request);
+            $response->getBody()->write('hello world by handler');
+            return $response;
+        });
+
+        $ie->run();
+        $response = $ie->get('response');
+
+        # send was be called
+        $this->assertNotNull($response);
+        $this->assertInstanceOf(Response::class, $response);
+
+        # handler was called
+        $this->assertEquals("hello world by handler", (string) $ie->get('contents'));
+        $body = $response->getBody();
+        $this->assertInstanceOf(Stream::class, $body);
+        
+        # resource is closed
+        $this->assertFalse($body->isReadable());
+    }
 }
 
 class MockEngine extends Engine
 {
-    protected $result;
+    protected $response = null;
+    protected $contents = null;
 
-    function process($request, $response, $args)
+    public function get($v)
     {
-        $response->write('Hello World!');
-        return $response->withHeader('Engine', 'MyEngine 0.1 (test)');
+        return $this->$v;
     }
 
-    function finalize($request, $response, $args)
+    public function send(ResponseInterface $response)
     {
-        $response = $response->withHeader('finalize', 'processed');
-        $this->result = [$request, $response, $args];
-
-        # response->send();
+        $this->response = $response;
+        ob_start();
+        parent::send($response);
+        $this->contents = ob_get_clean();
     }
 
-    function getResult()
+    public function shutdown()
     {
-        return $this->result;
-    }
-}
-
-class EngineTest extends Test
-{
-    protected $ie;
-
-    public function setup($config = [])
-    {
-        $this->ie = $this->getEngine($config);
-    }
-
-    public function getEngine($config = [])
-    {
-        return new MockEngine($config);
-    }
-
-    public function test__Call()
-    {
-        $ie = $this->ie;
-
-        $this->assertInstanceOf(Cookie::class, $ie->getCookie());
-        $this->assertInstanceOf(Environment::class, $ie->getEnvironment());
-        $this->assertInstanceOf(Request::class, $ie->getRequest());
-        $this->assertInstanceOf(Response::class, $ie->getResponse());
-        $this->assertInstanceOf(ServerRequest::class, $ie->getServerRequest());
-        $this->assertInstanceOf(UploadedFile::class, $ie->getUploadedFile());
-        $this->assertInstanceOf(Uri::class, $ie->getUri());
-    }
-
-    public function testConfig()
-    {
-        $config = [
-            'debug' => [
-                'level' => 0,
-            ],
-
-            'domain' => [
-                'name' => 'Example',
-                'site' => 'example.com',
-            ],
-        ];
-
-        $ie = $this->getEngine($config);
-
-        $this->assertNotNull($ie->config('debug.level'));
-        $this->assertEquals($config['debug']['level'], $ie->config('debug.level'));
-        $this->assertEquals($config['domain']['name'], $ie->config('domain.name'));
-        $this->assertEquals($config['domain']['site'], $ie->config('domain.site'));
-        $this->assertNull($ie->config('domain.site.host'));
-        $this->assertEquals('github', $ie->config('domain.site.host', 'github'));
-    }
-
-    public function testDefaultEngineHttpClasses()
-    {
-        $ie = $this->getEngine();
-        $ie->run();
-
-        // $result = $ie->getResult(IrfanTOOR\Engine\Http\Response);
-
-        $this->assertInstanceOf(Cookie::class, $ie->getCookie());
-        $this->assertInstanceOf(Response::class, $ie->getResponse());
-        $this->assertInstanceOf(Request::class, $ie->getRequest());
-
-        $this->assertNotInstanceOf(MockResponse::class, $ie->getResponse());
-    }
-
-    public function testLoadProvidedDefaultClasses()
-    {
-        $config = [
-            'default' => [
-                'classes' => [
-                    'Response' => 'MockResponse',
-                ],
-
-                'Environment' => [
-                    'hello' => 'world',
-                    'Hello' => 'World'
-                ],
-
-                'ServerRequest' => [
-                    'env' => [
-                        'hello'   => 'world',
-                        'Hello'   => 'World!',
-                        'Missing' => 'Not'
-                    ],
-                ],
-
-                'Uri' => [
-                    'scheme' => 'ie',
-                    'host' => 'irfantoor.com',
-                ],
-            ],
-        ];
-
-        $ie = $this->getEngine($config);
-        $ie->run();
-        $this->assertInstanceOf(MockResponse::class, $ie->getResponse());
-
-        # Environment contains the configured env variables
-        $req = $ie->getServerRequest();
-        $this->assertEquals('world', $req->getAttribute('env.hello'));
-        $this->assertEquals('World!', $req->getAttribute('env.Hello'));
-        $this->assertEquals('Not', $req->getAttribute('env.Missing'));
-
-        # Cookie returns a new instance
-        $c1 = $ie->getCookie(['name' => 'hello', 'value' => 'world']);
-        $c2 = $ie->getCookie(['name' => 'hello', 'value' => 'world']);
-
-        $this->assertInstanceOf(Cookie::class, $c1);
-        $this->assertEquals($c1, $c2);
-        $this->assertNotSame($c1, $c2);
-
-        # Uploaded file returns a new instance
-        $f1 = $ie->getUploadedFile('hello.txt', 'world.txt', 'text/plain');
-        $f2 = $ie->getUploadedFile('hello.txt', 'world.txt', 'text/plain');
-
-        $this->assertInstanceOf(UploadedFile::class, $f1);
-        $this->assertEquals($f1, $f2);
-        $this->assertNotSame($f1, $f2);
-
-        # Uri
-        $uri = $ie->getUri();
-        $this->assertEquals('ie', $uri->get('scheme'));
-        $this->assertEquals('irfantoor.com', $uri->get('host'));
-
-        $req = $ie->getServerRequest();
-        $this->assertEquals($uri, $req->getUri());
-
-        $ie = $this->getEngine();
-        $uri = $ie->getUri();
-        $this->assertEquals('http', $uri->get('scheme'));
-        $this->assertEquals('localhost', $uri->get('host'));
-    }
-
-    public function testGetVersion()
-    {
-        $ie = $this->ie = $this->getEngine();
-        $version = Engine::VERSION;
-        $this->assertEquals($version, $ie->getVersion());
-    }
-
-    public function testRun()
-    {
-        $result = $this->ie->getResult();
-
-        $this->assertNull($result);
-
-        $this->ie->run();
-
-        $result = $this->ie->getResult();
-
-        // $this->assertImplements(Psr\Http\Message\RequestInterface::class, $result[0]);
-        // $this->assertImplements(Psr\Http\Message\ResponseInterface::class, $result[1]);
-        $this->assertArray($result[2]);
-    }
-
-    public function testProcess()
-    {
-        $this->ie->run();
-        $result = $this->ie->getResult();
-        $res = $result[1];
-
-        # assert the actions in the process phase
-        $this->assertEquals('Hello World!', $res->getBody());
-        $this->assertEquals('Engine: MyEngine 0.1 (test)', $res->getHeaderLine('engine'));
-    }
-
-    public function testFinalize()
-    {
-        $this->ie->run();
-
-        $result = $this->ie->getResult();
-        $res = $result[1];
-
-        $this->assertEquals('finalize: processed', $res->getHeaderLine('finalize'));
+        exit;
     }
 }

@@ -6,8 +6,7 @@ focussing on the requests and the responses. A Swiss-knife for world-wide-web.
 
 The objective of this library is to be a Bare-minimum, Embeddable and Educative.
 
-Irfan's Engine now implements the PSR-7 classes and conforms to the validation
-constraints imposed.
+Irfan's Engine uses IrfanTOOR\Http which implements the psr/http-message.
 
 Note: This documentation is just to get you started, you are encouraged to study
 the code and the examples in the examples folder, which might help you get going
@@ -25,72 +24,102 @@ composer require irfantoor/engine
 
 Note: Irfan's Engine requires PHP 7.0 or newer.
 
-
-### 2. Basic Initialisation
-
-Use the console command <strong>ie</strong> to create a basic app for 
-you. When Irfan's Engine is installed, it will create a link to a shell 
-command. Which can be used as follows to create an app.
-
-```sh
-$ ./ie app:init
-```
-
-### 3. Serve the app
-
-App can be tested on basic php server using the following command:
-
-```sh
-$ ./ie app:serve
-```
-
-Go to <a href="http://localhost:8000">http://localhost:8000</a> and voilà! your
-welcome app alive. You can start experimenting by changing or adding the routes,
-creating/modifying models, views, controllers etc.
-
-Dont forget the shell command `ie` can be a big help in creating the models with
-the associated databases, middlewares, controllers or views etc.
-
-
 ## Usage
 
-Here are a few examples :
+You can find the code in examples folder.
 
-### Hello World! - using response
+### hello-world.php
 ```php
 <?php
-require '/path/to/ ... vendor/autoload.php';
 
-use IrfanTOOR\Engine\Http\ServerRequest;
-use IrfanTOOR\Engine\Http\Response;
+# php -S localhost:8000 hello-world.php
 
-$response = (new Response())
-              ->withStatus(Response::STATUS_IM_A_TEAPOT)
-              ->write('Hello World!')
-...
-$response->send();
-```
+require ("autoload.php"); # give the path/to/vendor/autoload.php
 
-```php
-<?php
-...
-(new Response())
-	->withStatus(Response::STATUS_IM_A_TEAPOT)
-	->write('Hello World!')
-	->send();
-```
+use IrfanTOOR\Engine;
 
-### Hello World! - using parameters from Request
+$ie = new Engine(
+    [
+        'debug' => [
+            'level' => 2
+        ],
+        'default' => [
+            'name' => 'world',
+        ]
+    ]
+);
 
-```php
-<?php
-...
-# name passed as get variable: http://example.com/?name=alfa
+# name passed as get variable: http://localhost:8000/?name=alfa
+# check: http://localhost:8000/?name=alfa&debug=1
+# check: http://localhost:8000/?name=alfa&exception=1
+
 # or posted through a form
-$name = (new ServerRequest)->getAttribute('name', 'World');
-(new Response())
-	->write('Hello ' . ucfirst($name) . '!')
-	->send();
+$ie->addHandler(function ($request) use($ie) {
+	$name = $request->getQueryParams()['name'] ?? $ie->config('default.name');
+
+	$response = $ie->create('Response');
+    $response->getBody()->write('Hello ' . ucfirst($name) . '!');
+    
+    if ($request->getQueryParams()['exception'] ?? null) {
+        throw new Exception("An exception at your service!");
+    }
+
+    if ($request->getQueryParams()['debug'] ?? null) {
+        # dump
+        d($request);
+        d($response);
+
+        # dump and die!
+        dd($ie);
+    }
+    
+    # a response must be sent back in normal circumstances!
+    return $response;
+});
+
+$ie->run();
+```
+
+### Provider of Http Suite
+
+Irfan's Engine uses IrfanTOOR\Http suite by default. You can use another provider
+by defining it through passed config.
+
+Download the Psr compliant Http suite you want to use and define the provider in
+the config, for example you can use slim\psr7;
+
+```sh
+$ composer require slim/psr7
+```
+
+```php
+<?php
+
+require 'path/to/autoload.php';
+
+use IrfanTOOR\Engine;
+
+# Create engine
+$ie = new Engine(
+	[
+		'http' => [
+			'provider' => 'Slim\\Psr7',
+		]
+	]
+);
+
+# Add handler
+$ie->addHandler(function($request) use($ie) {
+	# Request received by handle will be a Slim\Psr7 Request
+
+	# Psr\Slim7 Response
+	$response = $ie->create('Response');
+	$respone->write("Hello world from Slim\Psr7");
+	return $response;
+});
+
+# Run ...
+$ie->run();
 ```
 
 ### Environment
@@ -102,80 +131,73 @@ request class.
 Environment can be mocked by defining the 'env' element in the configuration file,
 or as follows, if using without the engine:
 
-```php
-<?php
-require 'vendor/autoload.php';
-
-use IrfanTOOR\Engine\Http\Environment;
-use IrfanTOOR\Debug;
-
-Debug::enable();
-
-$e = new Environment([
-	'HTTP_HOST' => 'example.com',
-	'Engine' => 'My Engine v1.0',
-]);
-
-// Environment is a case sensitive collection
-$host   = $e->get('HTTP_HOST', 'localhost');
-$engine = $e->get('Engine');
-
-Debug::dump([$host, $engine]);
-```
-
 ### Uri
-
 Whenever a server request is created, a Uri containing the parsed information of the
 requested url is also present and can be accessed as:
 
 ```php
-$request  = new ServerRequest();
-$response = new Response();
-// $ie->addRoute('ANY', '.*', function ($request, $response){ ...
+class RequestHandler
+{
+	protected $engine;
 
-$uri =  $request->getUri();
-$host = $uri->getHost();
-$port = $uri->getPort();
+	function __construct($engine)
+	{
+		$this->engine = $engine;
+	}
+
+	function handle(RequestInterface $request): ResponseInterface
+	{
+		$uri =  $request->getUri();
+		$host = $uri->getHost();
+		$port = $uri->getPort();
+		$path = $uri->getPath();
+		# ...
+
+		$response = $this->engine->create('Response');
+		# ...
+
+		return $response;
+	}
+}
+
+$ie = new Engine();
+$ie->addHandler(new RequestHandler($ie));
+$ie->run();
 ```
 
 ### Headers
 
 ```php
-<?php
-...
+# ...
 # Setting a header
-$response->withHeader('Content-Type', 'text/plain');
-$response->withHeader('keywords', 'hello, world');
+$response = $response
+	->withHeader('Content-Type', 'text/plain')
+	->withHeader('keywords', 'hello, world')
+;
 
 # Removing a header
-$response->withoutHeader('unwanted-header');
+$response = $response->withoutHeader('unwanted-header');
 
-# checking a header
+# Checking a header
 if ($response->hasHeader('content-type')) {
-	# do something ...
+	# Do something ...
 }
 
-# getting a header, note that the key of headers is not case sensitive
+# Getting a header, note that the key of headers is not case sensitive
 $content_type = $response->getHeader('CONTENT-type');  
-...
+# ...
 ```
 
 ### Creating your config file: path/to/config.php
+
+Create a config.php file:
 
 ```php
 <?php
 
 return [
 	'debug' => [
-		# this is for production
-		# 0 -- no Debug::dump($v) is processed
-
-		# these are for the development
-		# 1 -- elapsed time is attached to the response
-		# 2 -- included files are included in the dump
-		# 3 -- detail of routes and the environment is also dumped
-
-		'level' => 0, # or can be 1, 2 or 3
+		'level' => 0, # Or can be 1, 2 or 3
 	],
 	'environment' 	=> [
 		'REMOTE_ADDR' => '192.168.1.1',
@@ -192,34 +214,40 @@ and then this config can be included like this:
 ```php
 <?php
 $config = require("path/to/config.php");
-$ie = new IrfanTOOR\Engine($config);
+$ie = new IrfanTOOR\Engine($config));
 
-$ie->config('site.name');
+# OR preferably:
+$ie = new IrfanTOOR\Engine([
+	'config_file' => "path/to/config.php",
+]);
+
+$ie->config('site.name'); # Returns "mysite.com"
 ```
 
 ### Debugging
 
 You can enable debugging while coding your application, a short, concise and to
 the point, error description and trace is dumped in case of any exception. You
-can enable the debugging using config if using Irfan's Engine or by simply by
-using this class in any of your code directly as:
+can enable the debugging using config if using Irfan's Engine.
 
 ```php
 <?php
 require "path/to/vendor/autoload.php";
-use IrfanTOOR\Engine\Debug;
-Debug::enable(2); # 2 is debug level
 
-...
-# You can use it to dump data etc.
-
-Debug::dump($request);
-Debug::dump($response->getHeaders());
+use IrfanTOOR\Engine;
+$ie = new Engine(
+	[
+		'debug' => [
+			'level'  => 2, # Can be from 0 to 3
+		]
+	]
+);
+# ...
+# If debug level is above 0, you can use the function d() && dd() to dump a 
+# variable while development.
+d($request);
+dd($request->getHeaders());
 ```
-
-Debug has a dependency on IrfanTOOR\\Console for dumping the results on the
-console. Try including it in the starting index.php or bootstrap.php file so
-that it can detect any errors in the succeeding files.
 
 ## About
 
@@ -228,4 +256,4 @@ Irfan's Engine works with PHP 7.0 or above.
 
 **License**
 
-Irfan's Engine is licensed under the MIT License - see the `LICENSE` file for details
+Irfan's Engine is licensed under the MIT License - see the `LICENSE` file for details.
