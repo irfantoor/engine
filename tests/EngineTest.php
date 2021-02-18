@@ -27,7 +27,7 @@ class EngineTest extends Test
 {
     function getEngine($init = [])
     {
-        # if we wont set it, it might make the this class die silently!
+        # If we wont set it, it might make the this class die silently!
         if (!isset($init['status']))
             $init['status'] = Engine::STATUS_OK;
 
@@ -71,7 +71,7 @@ class EngineTest extends Test
         foreach ($config as $k => $v) {
             $this->assertEquals($v, $ie->config($k));
         }
-    }    
+    }
 
     function testInitConfigFile()
     {
@@ -226,7 +226,7 @@ class EngineTest extends Test
         $this->assertEquals("hello world by handler", (string) $ie->get('contents'));
         $body = $response->getBody();
         $this->assertInstanceOf(Stream::class, $body);
-        
+
         # resource is closed
         $this->assertFalse($body->isReadable());
     }

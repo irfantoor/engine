@@ -35,14 +35,12 @@ class ShutdownHandler
     {
         if (!$this->terminal)
             $this->terminal = new Terminal();
-        
+
         return $this->terminal;
     }
 
     public function handle($contents = '')
     {
-        // $error = error_get_last();
-
         if ($contents === '') {
             $t = $this->getTerminal();
 
@@ -76,7 +74,7 @@ class ShutdownHandler
         return $response;
     }
 
-    # returns a simple http page template, with a provided title
+    # Returns a simple http page template, with a provided title
     public function template(string $title)
     {
         # cli template

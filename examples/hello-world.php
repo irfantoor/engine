@@ -23,11 +23,11 @@ $ie = new Engine(
 
 # or posted through a form
 $ie->addHandler(function ($request) use($ie) {
-	$name = $request->getQueryParams()['name'] ?? $ie->config('default.name');
+    $name = $request->getQueryParams()['name'] ?? $ie->config('default.name');
 
-	$response = $ie->create('Response');
+    $response = $ie->create('Response');
     $response->getBody()->write('Hello ' . ucfirst($name) . '!');
-    
+
     if ($request->getQueryParams()['exception'] ?? null) {
         throw new Exception("An exception at your service!");
     }
@@ -40,7 +40,7 @@ $ie->addHandler(function ($request) use($ie) {
         # dump and die!
         dd($ie);
     }
-    
+
     # a response must be sent back in normal circumstances!
     return $response;
 });

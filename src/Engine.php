@@ -35,10 +35,10 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "4.0.0";
+    const VERSION     = "4.0.1";
 
     /**
-     * status values, which indicate the possible state of the engine at a given
+     * Status values, which indicate the possible state of the engine at a given
      * point in time
      */
     const STATUS_OK          =  1;
@@ -89,7 +89,7 @@ class Engine
                     return;
                 }
 
-                $response = 
+                $response =
                     (new ShutdownHandler(self::NAME, self::VERSION, self::$status))
                     ->handle($contents)
                 ;
@@ -100,43 +100,43 @@ class Engine
 
         $init = is_array($init) ? $init : [];
 
-        # initial debug while warm up
+        # Initial debug while warm up
         $dl = $init['debug']['level'] ?? 0;
         $this->enableDebug($dl);
 
-        # load the config from the file
+        # Load the config from the file
         $file = $init['config_file'] ?? null;
 
         if ($file && is_string($file)) {
             if (!is_file($file))
                 throw new \RuntimeException("Config file: $file, does not exist.");
-            
+
             $config_from_file = require $file;
-            
+
             if (!is_array($config_from_file))
                 throw new \RuntimeException(
                     "Config file: $file, does not return an array."
                 );
-            
+
             $init = array_merge($init, $config_from_file);
             unset($init['config_file']);
         }
 
-        # config
+        # Config
         $this->config = new Collection($init);
         $this->config->lock();
 
-        # readjust the debug level
+        # Readjust the debug level if the need be
         $config_dl = $this->config('debug.level', 0);
         if ($config_dl !== $dl)
             $this->enableDebug($config_dl);
 
-        # container
+        # Init Container
         $this->container = new Container();
         $this->container->addExtension('di', new \DI\Container());
 
-        # default povider
-        $this->provider = 
+        # Select the default Http povider
+        $this->provider =
             rtrim($this->config('http.provider', 'IrfanTOOR\\Http'), "\\")
             . "\\"
         ;
@@ -172,7 +172,7 @@ class Engine
             case 'createFromEnvironment':
             case 'createFromGlobals':
                 $fclass = $this->config(
-                    'provider.mappings.' . $class, 
+                    'provider.mappings.' . $class,
                     $this->provider . $class . 'Factory'
                 );
 
@@ -196,11 +196,11 @@ class Engine
 
             case 'create':
                 $class = $this->config(
-                    'provider.mappings.' . $class, 
+                    'provider.mappings.' . $class,
                     $this->provider . $class
                 );
 
-                return $this->container->make($class, $args);        
+                return $this->container->make($class, $args);
         }
     }
 
@@ -277,7 +277,7 @@ class Engine
     public function send(ResponseInterface $response)
     {
         if (!headers_sent()) {
-            # send status header
+            # Send the status header
             $status = $response->getStatusCode();
             $http_line = sprintf('HTTP/%s %s %s',
                 $response->getProtocolVersion(),
@@ -285,12 +285,12 @@ class Engine
                 $response->getReasonPhrase()
             );
 
-            # send headers
+            # Send the other headers
             foreach ($response->getHeaders() as $k => $v)
                 header($k . ":" . $response->getHeaderLine($k));
         }
 
-        # send body of response
+        # Send the body of the response
         $stream = $response->getBody();
 
         if ($stream->isSeekable())
@@ -302,7 +302,8 @@ class Engine
 
         $stream->close();
 
-        # to avoid shutdown handler processing
+        # We have arrived at the end, so mark the status as OK to avoid
+        # the ShutdownHandler's processing
         self::$status = self::STATUS_OK;
     }
 }
