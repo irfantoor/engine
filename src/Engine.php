@@ -35,7 +35,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "4.0.1";
+    const VERSION     = "4.0.2";
 
     /**
      * Status values, which indicate the possible state of the engine at a given

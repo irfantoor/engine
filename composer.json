@@ -15,7 +15,7 @@
         "irfantoor/debug": "~0.6",
         "irfantoor/collection": "~3.0",
         "irfantoor/container": "~1.1",
-        "irfantoor/http": "^0.1.0"
+        "irfantoor/http": "~0.2"
     },
     "require-dev": {
         "irfantoor/test": "~0.7"
