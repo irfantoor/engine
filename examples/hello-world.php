@@ -1,8 +1,9 @@
 <?php
 
 # php -S localhost:8000 hello-world.php
+define('ROOT', dirname(__DIR__) . "/");
 
-require ("autoload.php"); # give the path/to/vendor/autoload.php
+require (ROOT . "vendor/autoload.php"); # give the path/to/vendor/autoload.php
 
 use IrfanTOOR\Engine;
 
@@ -25,20 +26,28 @@ $ie = new Engine(
 $ie->addHandler(function ($request) use($ie) {
     $name = $request->getQueryParams()['name'] ?? $ie->config('default.name');
 
+$txt = <<<END
+<div>
+<a href="/">home</a> |
+<a href="/?debug=true">debug</a> |
+<a href="/?exception=true">exception</a> |
+<a href="/?name=irfan">hello irfan</a>
+</div>
+END;
     $response = $ie->create('Response');
-    $response->getBody()->write('Hello ' . ucfirst($name) . '!');
 
     if ($request->getQueryParams()['exception'] ?? null) {
         throw new Exception("An exception at your service!");
-    }
-
-    if ($request->getQueryParams()['debug'] ?? null) {
+    } elseif ($request->getQueryParams()['debug'] ?? null) {
         # dump
         d($request);
         d($response);
 
         # dump and die!
         dd($ie);
+    } else {
+        $response->getBody()->write($txt);
+        $response->getBody()->write('Hello ' . ucfirst($name) . '!');
     }
 
     # a response must be sent back in normal circumstances!
