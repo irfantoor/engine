@@ -35,7 +35,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "4.0.3";
+    const VERSION     = "4.0.4";
 
     /**
      * Status values, which indicate the possible state of the engine at a given
@@ -85,8 +85,8 @@ class Engine
                 $contents = ob_get_clean();
 
                 $response =
-                    (new ShutdownHandler(self::NAME, self::VERSION, self::$status))
-                    ->handle($contents)
+                    (new ShutdownHandler($this))
+                    ->handle($contents, self::$status)
                 ;
 
                 $this->send($response);
@@ -302,6 +302,5 @@ class Engine
         # We have arrived at the end, so mark the status as OK to avoid
         # the ShutdownHandler's processing
         self::$status = self::STATUS_OK;
-        exit;
     }
 }

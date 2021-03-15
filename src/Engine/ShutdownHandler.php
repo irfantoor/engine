@@ -3,18 +3,15 @@
 namespace IrfanTOOR\Engine;
 
 use Exception;
+use IrfanTOOR\Engine;
 use IrfanTOOR\Terminal;
-
-use IrfanTOOR\Http\Response;
+use Psr\Http\Message\ResponseInterfae;
 
 # Handles a premature shutdown of Engine caused by some error or by dd() ...
 # and prints the error or output in a readable format
 class ShutdownHandler
 {
-    protected $name;
-    protected $version;
-    protected $status;
-
+    protected $engine;
     protected $terminal;
 
     # todo -- should be defined in a single file
@@ -24,11 +21,9 @@ class ShutdownHandler
     const STATUS_ERROR       = -2;
     const STATUS_FATAL_ERROR = -3;
 
-    function __construct(string $name, string $version, int $status)
+    function __construct($engine)
     {
-        $this->name    = $name;
-        $this->version = $version;
-        $this->status  = $status;
+        $this->engine = $engine;
     }
 
     function getTerminal()
@@ -39,7 +34,7 @@ class ShutdownHandler
         return $this->terminal;
     }
 
-    public function handle($contents = '')
+    public function handle(string $contents = '', int $status = self::STATUS_OK)
     {
         if ($contents === '') {
             $t = $this->getTerminal();
@@ -51,7 +46,7 @@ class ShutdownHandler
             $contents = ob_get_clean();
         }
 
-        switch ($this->status) {
+        switch ($status) {
             case self::STATUS_FATAL_ERROR:
             case self::STATUS_ERROR:
                 $title  = "Error";
@@ -62,21 +57,33 @@ class ShutdownHandler
                 break;
 
             case self::STATUS_TRANSIT:
+            case self::STATUS_OK:
             default:
                 $title  = "Shutdown Handler";
         }
 
-        $tplt = $this->template($title);
-        $tplt = str_replace('{$contents}', $contents, $tplt);
+        $data = [
+            'title' => $title,
+            'engine' => $this->engine::NAME,
+            'version' => $this->engine::VERSION,
+        ];
 
-        $response = (new Response())->withStatus(500);
+        $tplt = $this->template($data);
+        $tplt = str_replace('{$contents}', $contents, $tplt);
+        $response = $this->engine->create('Response');
+
+        if (self::STATUS_OK !== $status)
+            $response = $response->withStatus(500);
+
         $response->getBody()->write($tplt);
         return $response;
     }
 
     # Returns a simple http page template, with a provided title
-    public function template(string $title)
+    public function template(array $data)
     {
+        extract($data);
+
         # cli template
         if (PHP_SAPI === 'cli') {
             $t = $this->getTerminal();
@@ -84,7 +91,7 @@ class ShutdownHandler
             $t->writeln(" " . $title . " ", "black, bg_white");
             $t->writeln();
             $t->writeln('{$contents}');
-            $t->writeln("{$this->name} - v{$this->version}", "dark");
+            $t->writeln("{$engine} - v{$version}", "dark");
 
             $tplt = $t->ob_get_contents();
         }
@@ -106,7 +113,7 @@ class ShutdownHandler
     <hr>
     <p>{\$contents}</p>
     <hr>
-    <p>{$this->name} - v{$this->version}</p>
+    <p>{$engine} v{$version}</p>
 </body>
 </html>
 END;
