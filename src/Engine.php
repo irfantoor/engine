@@ -37,7 +37,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "4.0.5";
+    const VERSION     = "4.0.6";
 
     /**
      * Status values, which indicate the possible state of the engine at a given
@@ -129,7 +129,12 @@ class Engine
         $this->config->remove('config_file');
         $this->config->lock();
 
-        $this->provider = $this->config('http.provider') ?? $this->provider;
+        $this->provider = 
+            rtrim(
+                $this->config('http.provider') ?? $this->provider,
+                "\\"
+            ) . "\\"
+        ;
 
         # Readjust the debug level if the need be
         $dl = $this->config('debug.level', 0);
