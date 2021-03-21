@@ -5,7 +5,9 @@ namespace IrfanTOOR\Engine;
 use Exception;
 use IrfanTOOR\Engine;
 use IrfanTOOR\Terminal;
+use IrfanTOOR\Http\Response;
 use Psr\Http\Message\ResponseInterfae;
+use Throwable;
 
 # Handles a premature shutdown of Engine caused by some error or by dd() ...
 # and prints the error or output in a readable format
@@ -63,14 +65,20 @@ class ShutdownHandler
         }
 
         $data = [
-            'title' => $title,
-            'engine' => $this->engine::NAME,
+            'title'   => $title,
+            'engine'  => $this->engine::NAME,
             'version' => $this->engine::VERSION,
         ];
 
-        $tplt = $this->template($data);
-        $tplt = str_replace('{$contents}', $contents, $tplt);
-        $response = $this->engine->create('Response');
+        $tplt     = $this->template($data);
+        $tplt     = str_replace('{$contents}', $contents, $tplt);
+
+        # if the provider is not aavailable ...
+        try {
+            $response = $this->engine->create('Response');
+        } catch (Throwable $th) {
+            $response = new Response();
+        }
 
         if (self::STATUS_OK !== $status)
             $response = $response->withStatus(500);

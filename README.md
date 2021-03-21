@@ -197,7 +197,8 @@ Create a config.php file:
 
 return [
     'debug' => [
-        'level' => 0, # Or can be 1, 2 or 3
+        # Note: a level 4 sets the reporting_level to E_ALL, and is 0 for other levels.
+        'level' => 0, # Or can be 1, 2, 3 or 4
     ],
     'environment'     => [
         'REMOTE_ADDR' => '192.168.1.1',
@@ -218,6 +219,11 @@ $ie = new IrfanTOOR\Engine($config));
 
 # OR preferably:
 $ie = new IrfanTOOR\Engine([
+    # note a debug level, provided while init can help catching the errors
+    # of the config file, or any of the classes loaded in config etc.
+    'debug' => [
+        'level' => 1,
+    ],
     'config_file' => "path/to/config.php",
 ]);
 
@@ -238,7 +244,7 @@ use IrfanTOOR\Engine;
 $ie = new Engine(
     [
         'debug' => [
-            'level'  => 2, # Can be from 0 to 3
+            'level'  => 2, # Can be from 0 to 4
         ]
     ]
 );
@@ -252,7 +258,7 @@ dd($request->getHeaders());
 ## About
 
 **Requirements**
-Irfan's Engine works with PHP 7.0 or above.
+Irfan's Engine works with PHP 7.3 or above.
 
 **License**
 

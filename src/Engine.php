@@ -26,6 +26,8 @@ use Psr\Http\Message\{
     ServerRequestInterface,
 };
 
+use Throwable;
+
 /**
  * Irfan's Engine -- can be used to receive the ServerRequest, assign a
  * RequestHandler to handle it and send the generated Response. It can
@@ -35,7 +37,7 @@ class Engine
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "4.0.4";
+    const VERSION     = "4.0.5";
 
     /**
      * Status values, which indicate the possible state of the engine at a given
@@ -62,51 +64,57 @@ class Engine
     /** @var callback -- Request handler callback */
     protected $handler;
 
-    /*
+    /**
      * Irfan's Engine constructor
      *
      * @param array $init Array to initialize the engine
      */
-    function __construct($init = [])
+    function __construct(array $init = [])
     {
-        ob_start();
         self::$status = $init['status'] ?? self::STATUS_TRANSIT;
+        register_shutdown_function([$this, "shutdown"]);
 
-        # shutdown handler
-        register_shutdown_function(
-            function () {
-                if (self::STATUS_OK === self::$status)
-                    return;
-
-                $error = error_get_last();
-                if ($error)
-                    print_r($error);
-
-                $contents = ob_get_clean();
-
-                $response =
-                    (new ShutdownHandler($this))
-                    ->handle($contents, self::$status)
-                ;
-
-                $this->send($response);
-            }
-        );
-
-        $init = is_array($init) ? $init : [];
-
-        # Initial debug while warm up
+        # warm up debug
         $dl = $init['debug']['level'] ?? 0;
-        $this->enableDebug($dl);
+        Debug::enable($dl);
 
+        # exception / error handlers
+        set_exception_handler(function($e) {
+            self::$status = self::STATUS_EXCEPTION;
+            Debug::exceptionHandler($e);
+            exit;
+        });
+
+        set_error_handler(function($type, $message, $file, $line) {
+            self::$status = self::STATUS_ERROR;
+            Debug::errorHandler($type, $message, $file, $line);
+            exit;
+        });
+
+        # Init Container
+        $this->container = new Container();
+        $this->container->addExtension('di', new \DI\Container());
+
+        # Select the default Http povider
+        $this->provider = "IrfanTOOR\\Http\\";
+
+        ob_start();
+        $this->config = new Collection();
+        $this->loadConfig($init);
+    }
+
+    /**
+     * Loads the configuration
+     *
+     * @param array $init Associative array of key to value
+     */
+    public function loadConfig(array $init = [])
+    {
         # Load the config from the file
         $file = $init['config_file'] ?? null;
 
-        if ($file && is_string($file)) {
-            if (!is_file($file))
-                throw new \RuntimeException("Config file: $file, does not exist.");
-
-            $config_from_file = require $file;
+        if ($file) {
+            $config_from_file = include $file;
 
             if (!is_array($config_from_file))
                 throw new \RuntimeException(
@@ -114,27 +122,19 @@ class Engine
                 );
 
             $init = array_merge($init, $config_from_file);
-            unset($init['config_file']);
         }
 
         # Config
-        $this->config = new Collection($init);
+        $this->config->setMultiple($init);
+        $this->config->remove('config_file');
         $this->config->lock();
 
+        $this->provider = $this->config('http.provider') ?? $this->provider;
+
         # Readjust the debug level if the need be
-        $config_dl = $this->config('debug.level', 0);
-        if ($config_dl !== $dl)
-            $this->enableDebug($config_dl);
-
-        # Init Container
-        $this->container = new Container();
-        $this->container->addExtension('di', new \DI\Container());
-
-        # Select the default Http povider
-        $this->provider =
-            rtrim($this->config('http.provider', 'IrfanTOOR\\Http'), "\\")
-            . "\\"
-        ;
+        $dl = $this->config('debug.level', 0);
+        if (Debug::getLevel() !== $dl)
+            Debug::enable($dl);
 
         # Default timezone Europ/Paris (+1)
         date_default_timezone_set(
@@ -167,13 +167,13 @@ class Engine
             case 'createFromEnvironment':
             case 'createFromGlobals':
                 $fclass = $this->config(
-                    'provider.mappings.' . $class,
+                    'http.mappings.' . $class,
                     $this->provider . $class . 'Factory'
                 );
 
                 try {
                     $factory = $this->container->make($fclass, $args);
-                } catch (\Throwable $e) {
+                } catch (Throwable $th) {
                     $fclass = $this->provider . 'Factory\\' . $class . "Factory";
                     $factory = $this->container->make($fclass, $args);
                 }
@@ -191,31 +191,12 @@ class Engine
 
             case 'create':
                 $class = $this->config(
-                    'provider.mappings.' . $class,
+                    'http.mappings.' . $class,
                     $this->provider . $class
                 );
 
                 return $this->container->make($class, $args);
         }
-    }
-
-    /**
-     * Enables the debuging
-     *
-     * @param int $level Debug level, can be from 0 to 3, default value is 1
-     */
-    public function enableDebug(int $level = 1)
-    {
-        Debug::enable($level);
-
-        # Use this Exception handler instead of Debug's
-        set_exception_handler(
-            function ($e) {
-                self::$status = self::STATUS_EXCEPTION;
-                $handler = new ExceptionHandler();
-                $handler->handle($e);
-            }
-        );
     }
 
     /**
@@ -247,9 +228,8 @@ class Engine
             : $this->handler->__invoke($request)
         ;
 
-        if (!$response || !is_a($response, ResponseInterface::class)) {
+        if (!$response || !is_a($response, ResponseInterface::class))
             throw new Exception('Response not returned by the handler');
-        }
 
         return $response->withHeader("Engine", self::NAME . " v" . self::VERSION);
     }
@@ -302,5 +282,32 @@ class Engine
         # We have arrived at the end, so mark the status as OK to avoid
         # the ShutdownHandler's processing
         self::$status = self::STATUS_OK;
+    }
+
+    /**
+     * Called at shutdown
+     */
+    public function shutdown()
+    {
+        # if the request has already been sent
+        if (self::STATUS_OK === self::$status)
+            return;
+
+        # to catch any errors comming from unexpected shutdown of Engine
+        # and could not be caught earlier
+        while ($e = error_get_last()) {
+            self::$status = self::STATUS_ERROR;
+            Debug::errorHandler($e['type'], $e['message'], $e['file'], $e['line']);
+            error_clear_last();
+        }
+
+        $contents = ob_get_clean();
+
+        $response =
+            (new ShutdownHandler($this))
+            ->handle($contents, self::$status)
+        ;
+
+        $this->send($response);
     }
 }

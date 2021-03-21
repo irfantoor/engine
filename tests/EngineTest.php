@@ -88,6 +88,13 @@ class EngineTest extends Test
     function testExceptionHandler()
     {
         # todo -- verify that the exceptions are handled
+        # all the raised exceptions are handled by Debug
+    }
+
+    function testErrorHandler()
+    {
+        # todo -- verify that the errors are handled
+        # all the raised errors are handled by Debug
     }
 
     function testShutdownHandler()
@@ -128,21 +135,6 @@ class EngineTest extends Test
             $classname = 'IrfanTOOR\\Http\\' . $classname;
             $this->assertInstanceOf($classname, $class);
         }
-    }
-
-    function testEnableDebug()
-    {
-        $ie = $this->getEngine();
-        $ie->enableDebug(0);
-        $this->assertEquals(0, Debug::getLevel());
-
-        $ie->enableDebug(1);
-        $this->assertEquals(1, Debug::getLevel());
-
-        $ie->enableDebug(2);
-        $this->assertEquals(2, Debug::getLevel());
-
-        # todo -- verify that the exceptions are handled
     }
 
     function testAddHandler()
