@@ -13,10 +13,8 @@ namespace IrfanTOOR;
 use Exception;
 use IrfanTOOR\Collection;
 use IrfanTOOR\Debug;
-use IrfanTOOR\Engine\{
-    ExceptionHandler,
-    ShutdownHandler
-};
+use IrfanTOOR\Engine\RequestHandlerInterface;
+use IrfanTOOR\Engine\ShutdownHandler;
 
 use IrfanTOOR\Container;
 
@@ -33,11 +31,11 @@ use Throwable;
  * RequestHandler to handle it and send the generated Response. It can
  * handle the basic configuration, Exceptions and unexpected Shutdowns etc.
  */
-class Engine
+class Engine implements RequestHandlerInterface
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "4.0.6";
+    const VERSION     = "4.0.7";
 
     /**
      * Status values, which indicate the possible state of the engine at a given
@@ -138,6 +136,7 @@ class Engine
 
         # Readjust the debug level if the need be
         $dl = $this->config('debug.level', 0);
+
         if (Debug::getLevel() !== $dl)
             Debug::enable($dl);
 
@@ -244,7 +243,7 @@ class Engine
      */
     public function run()
     {
-        $request = $this->createFromEnvironment('ServerRequest');
+        $request = $this->create('ServerRequest');
         $response = $this->handle($request);
         $this->send($response);
     }
@@ -308,10 +307,13 @@ class Engine
 
         $contents = ob_get_clean();
 
-        $response =
-            (new ShutdownHandler($this))
-            ->handle($contents, self::$status)
+        $request = 
+            $this->createFromGlobals('ServerRequest')
+            ->withAttribute('contents', $contents)
+            ->withAttribute('status', self::$status)
         ;
+
+        $response = (new ShutdownHandler($this))->handle($request);
 
         $this->send($response);
     }

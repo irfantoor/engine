@@ -4,28 +4,28 @@ namespace IrfanTOOR\Engine;
 
 use Exception;
 use IrfanTOOR\Engine;
+use IrfanTOOR\Engine\RequestHandlerInterface;
 use IrfanTOOR\Terminal;
 use IrfanTOOR\Http\Response;
-use Psr\Http\Message\ResponseInterfae;
+use Psr\Http\Message\{ServerRequestInterface, ResponseInterface};
 use Throwable;
 
 # Handles a premature shutdown of Engine caused by some error or by dd() ...
 # and prints the error or output in a readable format
-class ShutdownHandler
+class ShutdownHandler implements RequestHandlerInterface
 {
+    /** @var Engine */
     protected $engine;
+
+    /** @var Terminal */
     protected $terminal;
 
-    # todo -- should be defined in a single file
-    const STATUS_OK          =  1;
-    const STATUS_TRANSIT     =  0;
-    const STATUS_EXCEPTION   = -1;
-    const STATUS_ERROR       = -2;
-    const STATUS_FATAL_ERROR = -3;
-
-    function __construct($engine)
+    function __construct($engine = null)
     {
-        $this->engine = $engine;
+        $this->engine = $engine ?? new Class() {
+            const NAME    = Engine::NAME;
+            const VERSION = Engine::VERSION;
+        };
     }
 
     function getTerminal()
@@ -36,8 +36,11 @@ class ShutdownHandler
         return $this->terminal;
     }
 
-    public function handle(string $contents = '', int $status = self::STATUS_OK)
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        $contents = $request->getAttribute('contents', '');
+        $status = $request->getAttribute('status', Engine::STATUS_ERROR);
+
         if ($contents === '') {
             $t = $this->getTerminal();
 
@@ -49,17 +52,17 @@ class ShutdownHandler
         }
 
         switch ($status) {
-            case self::STATUS_FATAL_ERROR:
-            case self::STATUS_ERROR:
+            case Engine::STATUS_FATAL_ERROR:
+            case Engine::STATUS_ERROR:
                 $title  = "Error";
                 break;
 
-            case self::STATUS_EXCEPTION:
+            case Engine::STATUS_EXCEPTION:
                 $title = "Exception";
                 break;
 
-            case self::STATUS_TRANSIT:
-            case self::STATUS_OK:
+            case Engine::STATUS_TRANSIT:
+            case Engine::STATUS_OK:
             default:
                 $title  = "Shutdown Handler";
         }
@@ -80,7 +83,7 @@ class ShutdownHandler
             $response = new Response();
         }
 
-        if (self::STATUS_OK !== $status)
+        if (Engine::STATUS_OK !== $status)
             $response = $response->withStatus(500);
 
         $response->getBody()->write($tplt);
@@ -99,7 +102,7 @@ class ShutdownHandler
             $t->writeln(" " . $title . " ", "black, bg_white");
             $t->writeln();
             $t->writeln('{$contents}');
-            $t->writeln("{$engine} - v{$version}", "dark");
+            $t->writeln("{$engine} v{$version}", "dark");
 
             $tplt = $t->ob_get_contents();
         }

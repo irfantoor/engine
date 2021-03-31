@@ -1,9 +1,8 @@
 <?php
 
-use IrfanTOOR\Test;
-
-use IrfanTOOR\Engine;
 use IrfanTOOR\Debug;
+use IrfanTOOR\Engine;
+use IrfanTOOR\Engine\{RequestHandlerInterface, ShutdownHandler};
 use IrfanTOOR\Http\{
     Cookie,
     Environment,
@@ -14,6 +13,7 @@ use IrfanTOOR\Http\{
     UploadedFile,
     Uri
 };
+use IrfanTOOR\Test;
 use Psr\Http\Message\{
     MessageInterface,
     RequestInterface,
@@ -42,6 +42,8 @@ class EngineTest extends Test
         $ie = $this->getEngine();
 
         $this->assertInstanceOf(Engine::class, $ie);
+        $this->assertImplements(RequestHandlerInterface::class, $ie);
+
         $this->assertString(Engine::NAME);
         $this->assertString(Engine::DESCRIPTION);
         $this->assertString(Engine::VERSION);
@@ -85,21 +87,52 @@ class EngineTest extends Test
         }
     }
 
-    function testExceptionHandler()
-    {
-        # todo -- verify that the exceptions are handled
-        # all the raised exceptions are handled by Debug
-    }
-
-    function testErrorHandler()
-    {
-        # todo -- verify that the errors are handled
-        # all the raised errors are handled by Debug
-    }
-
     function testShutdownHandler()
     {
-        # todo -- verify that the unexpected shutdown is handled
+        $ie = $this->getEngine(['debug' => ['level' => 1]]);
+        $sh = new ShutdownHandler($ie);
+        $this->assertInstanceOf(ShutdownHandler::class, $sh);
+        $this->assertImplements(RequestHandlerInterface::class, $sh);
+
+        $request = $ie->createFromGlobals('ServerRequest');
+        
+        $response = $sh->handle($request);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertEquals(500, $response->getStatusCode());
+        
+        $body = $response->getBody()->__toString();
+        $this->assertNotFalse(strpos($body, 'Error'));
+        $this->assertNotFalse(strpos($body, 'Nothing to display ...'));
+        $this->assertNotFalse(strpos($body, 'Increase the debug level to view the details'));
+        $this->assertNotFalse(strpos($body, $ie::NAME . ' v' . $ie::VERSION));
+
+        $request = $request->withAttribute('contents', 'its a test!');
+        $response = $sh->handle($request);
+        $body = $response->getBody()->__toString();
+        $this->assertFalse(strpos($body, 'Nothing to display ...'));
+        $this->assertNotFalse(strpos($body, 'its a test!'));
+
+        # title according to the status
+        $list = [
+            $ie::STATUS_OK          => 'Shutdown Handler',
+            $ie::STATUS_TRANSIT     => 'Shutdown Handler',
+            $ie::STATUS_EXCEPTION   => 'Exception',
+            $ie::STATUS_ERROR       => 'Error',
+            $ie::STATUS_FATAL_ERROR => 'Error',
+        ];
+
+        foreach ($list as $status => $title) {
+            $request = $request->withAttribute('status', $status);
+            $response = $sh->handle($request);
+            $body = $response->getBody()->__toString();
+            $this->assertNotFalse(strpos($body, $title));
+        }
+
+        # without passing the Engine Instance
+        $sh = new ShutdownHandler();
+        $response = $sh->handle($request);
+        $body = $response->getBody()->__toString();
+        $this->assertNotFalse(strpos($body, $ie::NAME . ' v' . $ie::VERSION));
     }
 
     function testCreate()
@@ -240,10 +273,5 @@ class MockEngine extends Engine
         ob_start();
         parent::send($response);
         $this->contents = ob_get_clean();
-    }
-
-    public function shutdown()
-    {
-        exit;
     }
 }
