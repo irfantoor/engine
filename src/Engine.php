@@ -35,7 +35,7 @@ class Engine implements RequestHandlerInterface
 {
     const NAME        = "Irfan's Engine";
     const DESCRIPTION = "A bare-minimum PHP framework";
-    const VERSION     = "4.0.7";
+    const VERSION     = "4.0.8";
 
     /**
      * Status values, which indicate the possible state of the engine at a given
@@ -243,7 +243,7 @@ class Engine implements RequestHandlerInterface
      */
     public function run()
     {
-        $request = $this->create('ServerRequest');
+        $request = $this->createFromGlobals('ServerRequest');
         $response = $this->handle($request);
         $this->send($response);
     }
