@@ -95,11 +95,11 @@ class EngineTest extends Test
         $this->assertImplements(RequestHandlerInterface::class, $sh);
 
         $request = $ie->createFromGlobals('ServerRequest');
-        
+
         $response = $sh->handle($request);
         $this->assertInstanceOf(ResponseInterface::class, $response);
         $this->assertEquals(500, $response->getStatusCode());
-        
+
         $body = $response->getBody()->__toString();
         $this->assertNotFalse(strpos($body, 'Error'));
         $this->assertNotFalse(strpos($body, 'Nothing to display ...'));
@@ -139,19 +139,12 @@ class EngineTest extends Test
     {
         $ie = $this->getEngine();
 
-        $classes = [
-            'Request',
-            'Response',
-            'ServerRequest',
-            'UploadedFile',
-            'Uri'
-        ];
-
-        foreach ($classes as $classname) {
-            $class = $ie->create($classname);
-            $classname = 'IrfanTOOR\\Http\\' . $classname;
-            $this->assertInstanceOf($classname, $class);
-        }
+        $this->assertInstanceOf( 'IrfanTOOR\\Http\\Request', $ie->create( 'Request', ['GET', 'http://example.com/'] ) );
+        $this->assertInstanceOf( 'IrfanTOOR\\Http\\Response', $ie->create( 'Response' ) );
+        $stream = $ie->create( 'Stream', [file_get_contents(__FILE__)] );
+        $this->assertInstanceOf( 'IrfanTOOR\\Http\\Stream', $stream );
+        $this->assertInstanceOf( 'IrfanTOOR\\Http\\UploadedFile', $ie->create( 'UploadedFile', [$stream] ) );
+        $this->assertInstanceOf( 'IrfanTOOR\\Http\\Uri',     $ie->create( 'Uri' ) );
     }
 
     function testCreateFromEnvironment()

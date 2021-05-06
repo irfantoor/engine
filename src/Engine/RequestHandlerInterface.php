@@ -12,7 +12,7 @@ namespace IrfanTOOR\Engine;
 
 use Psr\Http\Message\{ServerRequestInterface, ResponseInterface};
 
-interface RequestHandlerInterface 
+interface RequestHandlerInterface
 {
     /**
      * Processes a request

@@ -11,19 +11,9 @@
 namespace IrfanTOOR;
 
 use Exception;
-use IrfanTOOR\Collection;
-use IrfanTOOR\Debug;
-use IrfanTOOR\Engine\RequestHandlerInterface;
-use IrfanTOOR\Engine\ShutdownHandler;
-
-use IrfanTOOR\Container;
-
-use Psr\Http\Message\{
-    RequestInterface,
-    ResponseInterface,
-    ServerRequestInterface,
-};
-
+use IrfanTOOR\{ Collection, Container, Debug };
+use IrfanTOOR\Engine\{ RequestHandlerInterface, ShutdownHandler, DI };
+use Psr\Http\Message\{ RequestInterface, ResponseInterface, ServerRequestInterface };
 use Throwable;
 
 /**
@@ -89,16 +79,41 @@ class Engine implements RequestHandlerInterface
             exit;
         });
 
-        # Init Container
-        $this->container = new Container();
-        $this->container->addExtension('di', new \DI\Container());
-
         # Select the default Http povider
         $this->provider = "IrfanTOOR\\Http\\";
 
         ob_start();
         $this->config = new Collection();
         $this->loadConfig($init);
+
+        # Init Container
+        $this->container = new Container(
+            [
+                'init' => $this->config( 'init', [] )
+            ]
+        );
+
+        $di = new DI(
+            [
+                $this->provider => [
+                    'Request',
+                    'Response',
+                    'ServerRequest',
+                    'Stream',
+                    'UploadedFile',
+                    'Uri',
+
+                    'RequestFactory',
+                    'ResponseFactory',
+                    'ServerRequestFactory',
+                    'StreamFactory',
+                    'UploadedFileFactory',
+                    'UriFactory',
+                ]
+            ]
+        );
+
+        $this->container->addExtension( 'di', $di );
     }
 
     /**
@@ -127,7 +142,7 @@ class Engine implements RequestHandlerInterface
         $this->config->remove('config_file');
         $this->config->lock();
 
-        $this->provider = 
+        $this->provider =
             rtrim(
                 $this->config('http.provider') ?? $this->provider,
                 "\\"
@@ -162,44 +177,24 @@ class Engine implements RequestHandlerInterface
     /**
      * Intercept the calls to create, createFromEnvironment/createFromGlobals
      */
-    public function __call($method, $args = [])
+    public function __call($method, $args)
     {
         $class = $args[0];
-        $args  = $args[1] ?? [];
+        $args  = $args[1] ?? null;
+
+        if ( ! $args )
+            $args = $this->container->get( 'init' )[ $class ] ?? [];
 
         switch ($method) {
             case 'createFromEnvironment':
             case 'createFromGlobals':
-                $fclass = $this->config(
-                    'http.mappings.' . $class,
-                    $this->provider . $class . 'Factory'
-                );
-
-                try {
-                    $factory = $this->container->make($fclass, $args);
-                } catch (Throwable $th) {
-                    $fclass = $this->provider . 'Factory\\' . $class . "Factory";
-                    $factory = $this->container->make($fclass, $args);
-                }
-
-                if (method_exists($factory, 'createFromEnvironment'))
-                    return call_user_func_array(
-                        [$factory, 'createFromEnvironment'],
-                        $args
-                    );
-                elseif(method_exists($factory, 'createFromGlobals'))
-                    return call_user_func_array(
-                        [$factory, 'createFromGlobals'],
-                        $args
-                    );
+                return call_user_func_array( [ $this->container, $method ], [ $class, $args ] );
 
             case 'create':
-                $class = $this->config(
-                    'http.mappings.' . $class,
-                    $this->provider . $class
-                );
+                return call_user_func_array( [ $this->container, 'create' ], [ $class, $args ] );
 
-                return $this->container->make($class, $args);
+            case 'load':
+                return call_user_func_array( [ $this->container, 'load' ], [ $class, $args ] );
         }
     }
 
@@ -307,7 +302,7 @@ class Engine implements RequestHandlerInterface
 
         $contents = ob_get_clean();
 
-        $request = 
+        $request =
             $this->createFromGlobals('ServerRequest')
             ->withAttribute('contents', $contents)
             ->withAttribute('status', self::$status)
